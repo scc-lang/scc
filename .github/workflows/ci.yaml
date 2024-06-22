@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+    - main
+  
+  push:
+    branches:
+    - main
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/scc-lang/scc/build:latest@sha256:4b165b2fe28938f884814978a543e46ff744a022f200f7b1b09ba8839f982545
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Generate build files
+      run: |
+        mkdir build
+        cd build
+        CXX=clang++-18 cmake .. -G Ninja
+
+    - name: Build
+      run: |
+        cd build
+        ninja
