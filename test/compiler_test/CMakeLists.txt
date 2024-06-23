@@ -1,0 +1,8 @@
+add_executable(scc.compiler.test
+    lexer_test.cpp
+)
+target_link_libraries(scc.compiler.test
+    scc.compiler
+    GTest::gtest_main
+)
+gtest_discover_tests(scc.compiler.test)
