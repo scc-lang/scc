@@ -11,3 +11,20 @@
             throw;                                                    \
         },                                                            \
         expected_exception)
+
+#define ASSERT_THROW_COMPILER_EXCEPTION(statement, expected_exception)  \
+    do {                                                                \
+        auto expectedEx = expected_exception;                           \
+        ASSERT_THROW(                                                   \
+            try {                                                       \
+                statement;                                              \
+            } catch (const scc::compiler::Exception& e) {               \
+                ASSERT_EQ(e.startLine, expectedEx.startLine);           \
+                ASSERT_EQ(e.startColumn, expectedEx.startColumn);       \
+                ASSERT_EQ(e.endLine, expectedEx.endLine);               \
+                ASSERT_EQ(e.endColumn, expectedEx.endColumn);           \
+                ASSERT_EQ(std::string { e.what() }, expectedEx.what()); \
+                throw;                                                  \
+            },                                                          \
+            scc::compiler::Exception);                                  \
+    } while (false)
