@@ -1,6 +1,8 @@
 module;
 
 #include <any>
+#include <cassert>
+#include <format>
 #include <string>
 
 export module scc.compiler:token;
@@ -50,3 +52,33 @@ export struct Token final {
 };
 
 }
+
+export template <>
+struct std::formatter<scc::compiler::TokenType> {
+    constexpr auto parse(std::format_parse_context& ctx)
+    {
+        return ctx.begin();
+    }
+
+    auto format(scc::compiler::TokenType type, std::format_context& ctx) const
+    {
+        if (type < 256) {
+            return std::format_to(ctx.out(), "{}", (char)type);
+        }
+
+        switch (type) {
+        case scc::compiler::TOKEN_IDENTIFIER:
+            return std::format_to(ctx.out(), "IDENTIFIER");
+
+        case scc::compiler::TOKEN_SCOPE:
+            return std::format_to(ctx.out(), "::");
+
+        case scc::compiler::TOKEN_STRING:
+            return std::format_to(ctx.out(), "STRING");
+
+        default:
+            assert(false);
+            return std::format_to(ctx.out(), "(TokenType: {})", type);
+        }
+    }
+};

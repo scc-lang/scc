@@ -250,6 +250,14 @@ TEST_F(LexerTest, ParsePunctuationChar)
     ASSERT_EQ(token.startColumn, 9);
     ASSERT_EQ(token.endLine, 1);
     ASSERT_EQ(token.endColumn, 9);
+
+    lexer = CreateLexer(",");
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, ',');
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 1);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 1);
 }
 
 TEST_F(LexerTest, UnexpectedInput)

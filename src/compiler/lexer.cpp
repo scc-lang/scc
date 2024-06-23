@@ -3,6 +3,7 @@ module;
 #include <cassert>
 #include <istream>
 #include <memory>
+#include <queue>
 
 export module scc.compiler:lexer;
 import :exception;
@@ -17,9 +18,32 @@ export struct Lexer final {
         assert(m_in);
     }
 
-    const Token GetToken()
+    Token GetToken()
     {
-        return ReadTokenFromInput();
+        if (m_tokens.empty()) {
+            return ReadTokenFromInput();
+        } else {
+            auto token = std::move(m_tokens.front());
+            m_tokens.pop();
+            return std::move(token);
+        }
+    }
+
+    Token GetRequiredToken(int tokenType)
+    {
+        auto token = GetToken();
+        if (token.type != tokenType) {
+            throw Exception(token.startLine, token.startColumn, token.endLine, token.endColumn, "expected '{}'", (TokenType)tokenType);
+        }
+        return std::move(token);
+    }
+
+    const Token& PeekToken()
+    {
+        if (m_tokens.empty()) {
+            m_tokens.emplace(ReadTokenFromInput());
+        }
+        return m_tokens.front();
     }
 
 private:
@@ -53,6 +77,7 @@ private:
                 case '(':
                 case ')':
                 case ';':
+                case ',':
                     GetChar();
                     return Token { ch, m_line, m_column - 1 };
 
@@ -222,6 +247,7 @@ private:
     std::shared_ptr<std::istream> m_in {};
     int m_line { 1 };
     int m_column { 1 };
+    std::queue<Token> m_tokens {};
 };
 
 }
