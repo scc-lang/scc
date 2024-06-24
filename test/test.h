@@ -1,5 +1,7 @@
 #pragma once
 
+#include <filesystem>
+#include <fstream>
 #include <gtest/gtest.h>
 
 #define ASSERT_THROW_MSG(statement, expected_exception, expected_msg) \
@@ -28,3 +30,9 @@
             },                                                          \
             scc::compiler::Exception);                                  \
     } while (false)
+
+inline std::string ReadFileAsString(const std::filesystem::path& file)
+{
+    auto ifs = std::ifstream { file };
+    return std::string { std::istreambuf_iterator<char> { ifs }, std::istreambuf_iterator<char> {} };
+}

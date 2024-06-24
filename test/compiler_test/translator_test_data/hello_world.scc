@@ -1,0 +1,2 @@
+std::println("hello world!");
+std::println("hello\nwor\3ld!");

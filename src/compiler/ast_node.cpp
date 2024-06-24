@@ -18,6 +18,8 @@ export struct AstNode {
     }
 
     virtual ~AstNode() = default;
+
+    virtual void Visit(AstVisitor& visitor) = 0;
 };
 
 }
