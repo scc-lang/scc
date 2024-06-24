@@ -12,6 +12,9 @@ import :ast_identifier_expression;
 import :ast_string_literal_expression;
 import :ast_scope;
 import :ast_statement;
+import :ast_type_info;
+import :ast_variable_declaration;
+import :exception;
 import :lexer;
 import :source_range;
 
@@ -21,10 +24,8 @@ export struct Parser {
     // compile_unit
     //  : /* empty */
     //  : compile_unit statement
-    void ParseCompileUnit(std::shared_ptr<AstScope> scope, Lexer& lexer)
+    void ParseCompileUnit(AstScope& scope, Lexer& lexer)
     {
-        assert(scope);
-
         while (lexer.PeekToken().type != TOKEN_EOF) {
             ParseStatement(scope, lexer);
         }
@@ -32,26 +33,102 @@ export struct Parser {
 
     // statement
     //  : /* empty statement */ ';'
-    //  : expression_statement
-    void ParseStatement(std::shared_ptr<AstScope>& scope, Lexer& lexer)
+    //  : declaration_statement
+    //  | expression_statement
+    void ParseStatement(AstScope& scope, Lexer& lexer)
     {
-        assert(scope);
+        const auto& token = lexer.PeekToken();
 
-        if (lexer.PeekToken().type == ';') {
+        if (token.type == ';') {
+            // Empty statement.
             lexer.GetToken();
             return;
         }
 
-        ParseExpressionStatement(scope, lexer);
+        if (token.type == TOKEN_IDENTIFIER) {
+            // For a identifier token, this statement maybe an expression statement or
+            // a declaration_statement, depends on the value of the identifier.
+            // If the identifier is a type identifier, then it is a declaration_statement,
+            // otherwise, it is an expression statement.
+
+            // Parse the identifier expression.
+            auto identifier = std::unique_ptr<AstIdentifierExpression>(static_cast<AstIdentifierExpression*>(ParseIdentifierExpression(scope, lexer).release()));
+            assert(identifier);
+
+            // Query the identifer in the scope.
+            if (auto typeInfo = scope.QueryTypeInfo(identifier->fullName)) {
+                ParseDeclarationStatement(scope, lexer, std::move(identifier));
+            } else {
+                ParseExpressionStatement(scope, lexer, std::move(identifier));
+            }
+        } else {
+            ParseExpressionStatement(scope, lexer);
+        }
+    }
+
+    // declaration_statement
+    //  : variable_declaration_statement
+    void ParseDeclarationStatement(AstScope& scope, Lexer& lexer, std::unique_ptr<AstIdentifierExpression> typeIdentifierExpression)
+    {
+        assert(typeIdentifierExpression);
+
+        ParseVariableDeclarationStatement(scope, lexer, std::move(typeIdentifierExpression));
+    }
+
+    // variable_declaration_statement
+    //  : (variable_declaration ',')* variable_declaration ';'
+    void ParseVariableDeclarationStatement(AstScope& scope, Lexer& lexer, std::unique_ptr<AstIdentifierExpression> typeIdentifierExpression)
+    {
+        assert(typeIdentifierExpression);
+
+        ParseVariableDeclaration(scope, lexer, std::move(typeIdentifierExpression));
+
+        while (lexer.PeekToken().type == ',') {
+            lexer.GetToken();
+            ParseVariableDeclaration(scope, lexer);
+        }
+
+        lexer.GetRequiredToken(';');
+    }
+
+    // variable_declaration
+    //  : type_idenitifer IDENTIFIER ('=' expression)
+    void ParseVariableDeclaration(AstScope& scope, Lexer& lexer, std::unique_ptr<AstIdentifierExpression> typeIdentifierExpression = nullptr)
+    {
+        if (!typeIdentifierExpression) {
+            typeIdentifierExpression.reset(static_cast<AstIdentifierExpression*>(ParseIdentifierExpression(scope, lexer).release()));
+        }
+
+        assert(typeIdentifierExpression);
+
+        auto sourceRange = typeIdentifierExpression->sourceRange;
+
+        auto type = scope.QueryTypeInfo(typeIdentifierExpression->fullName);
+        if (!type) {
+            throw Exception { typeIdentifierExpression->sourceRange, "Undefined type '{}'", typeIdentifierExpression->fullName };
+        }
+
+        auto identifier = lexer.GetRequiredToken(TOKEN_IDENTIFIER);
+
+        auto initExpression = std::unique_ptr<AstExpression> {};
+        if (lexer.PeekToken().type == '=') {
+            lexer.GetToken();
+            initExpression = ParseExpression(scope, lexer);
+            sourceRange.endLine = initExpression->sourceRange.endLine;
+            sourceRange.endColumn = initExpression->sourceRange.endColumn;
+        } else {
+            sourceRange.endLine = identifier.endLine;
+            sourceRange.endColumn = identifier.endColumn;
+        }
+
+        scope.variableDeclarations.push_back(std::make_unique<AstVariableDeclaration>(std::move(sourceRange), *type, std::move(identifier.string()), std::move(initExpression)));
     }
 
     // expression_statement
     //  : expression ';'
-    void ParseExpressionStatement(std::shared_ptr<AstScope>& scope, Lexer& lexer)
+    void ParseExpressionStatement(AstScope& scope, Lexer& lexer, std::unique_ptr<AstIdentifierExpression> preExpression = nullptr)
     {
-        assert(scope);
-
-        auto expression = ParseExpression(scope, lexer);
+        auto expression = ParseExpression(scope, lexer, std::move(preExpression));
         assert(expression);
 
         auto sourceRange = expression->sourceRange;
@@ -61,17 +138,17 @@ export struct Parser {
         sourceRange.endLine = lastToken.endLine;
         sourceRange.endColumn = lastToken.endColumn;
 
-        scope->statements.push_back(std::make_unique<AstExpressionStatement>(std::move(sourceRange), std::move(expression)));
+        scope.statements.push_back(std::make_unique<AstExpressionStatement>(std::move(sourceRange), std::move(expression)));
     }
 
     // expression
     //  : string_literal_expression
     //  | function_call_expression
-    std::unique_ptr<AstExpression> ParseExpression(std::shared_ptr<AstScope>& scope, Lexer& lexer)
+    std::unique_ptr<AstExpression> ParseExpression(AstScope& scope, Lexer& lexer, std::unique_ptr<AstIdentifierExpression> preExpression = nullptr)
     {
-        assert(scope);
-
-        if (lexer.PeekToken().type == TOKEN_STRING) {
+        if (preExpression) {
+            return ParseFunctionCallExpression(scope, lexer, std::move(preExpression));
+        } else if (lexer.PeekToken().type == TOKEN_STRING) {
             return ParseStringLiteralExpression(scope, lexer);
         } else {
             return ParseFunctionCallExpression(scope, lexer);
@@ -81,11 +158,9 @@ export struct Parser {
     // function_call_expression
     //  : identifier_expression '(' ')'
     //  | identifier_expression '(' (expression ',')* expression ')'
-    std::unique_ptr<AstExpression> ParseFunctionCallExpression(std::shared_ptr<AstScope>& scope, Lexer& lexer)
+    std::unique_ptr<AstExpression> ParseFunctionCallExpression(AstScope& scope, Lexer& lexer, std::unique_ptr<AstIdentifierExpression> preExpression = nullptr)
     {
-        assert(scope);
-
-        auto funcExpression = ParseIdentifierExpression(scope, lexer);
+        auto funcExpression = preExpression ? std::unique_ptr<AstExpression> { preExpression.release() } : ParseIdentifierExpression(scope, lexer);
         auto sourceRange = funcExpression->sourceRange;
 
         lexer.GetRequiredToken('(');
@@ -107,10 +182,8 @@ export struct Parser {
 
     // identifier_expression
     //  : (IDENTIFIER '::')* IDENTIFIER
-    std::unique_ptr<AstExpression> ParseIdentifierExpression(std::shared_ptr<AstScope>& scope, Lexer& lexer)
+    std::unique_ptr<AstExpression> ParseIdentifierExpression(AstScope& scope, Lexer& lexer)
     {
-        assert(scope);
-
         auto token = lexer.GetRequiredToken(TOKEN_IDENTIFIER);
         auto sourceRange = SourceRange { token.startLine, token.startColumn, token.endLine, token.endColumn };
         auto fullName = std::string { std::move(token.string()) };
@@ -129,10 +202,8 @@ export struct Parser {
 
     // string_literal_expression
     //  : TOKEN_STRING
-    std::unique_ptr<AstExpression> ParseStringLiteralExpression(std::shared_ptr<AstScope>& scope, Lexer& lexer)
+    std::unique_ptr<AstExpression> ParseStringLiteralExpression(AstScope& scope, Lexer& lexer)
     {
-        assert(scope);
-
         auto token = lexer.GetRequiredToken(TOKEN_STRING);
         return std::make_unique<AstStringLiteralExpression>(SourceRange { token.startLine, token.startColumn, token.endLine, token.endColumn }, std::move(token.string()));
     }

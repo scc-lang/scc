@@ -13,12 +13,12 @@ protected:
 
     std::string Translate(const std::filesystem::path& path)
     {
-        auto scope = std::make_shared<AstScope>();
+        AstScope scope {};
         Lexer lexer { std::make_shared<std::istringstream>(ReadFileAsString(path)) };
         Parser {}.ParseCompileUnit(scope, lexer);
 
         auto output = std::make_shared<std::ostringstream>();
-        Translator { output }.VisitAstScope(*scope);
+        Translator { output }.VisitAstScope(scope);
         return output->str();
     }
 

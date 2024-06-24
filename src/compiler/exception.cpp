@@ -4,6 +4,7 @@ module;
 #include <stdexcept>
 
 export module scc.compiler:exception;
+import :source_range;
 
 namespace scc::compiler {
 
@@ -12,6 +13,12 @@ export struct Exception : std::runtime_error {
     int startColumn {};
     int endLine {};
     int endColumn {};
+
+    template <typename... Args>
+    Exception(SourceRange sourceRange, const std::string_view& message, Args&&... args)
+        : Exception(sourceRange.startLine, sourceRange.startColumn, sourceRange.endLine, sourceRange.endColumn, message, std::forward<Args>(args)...)
+    {
+    }
 
     template <typename... Args>
     Exception(int startLine, int startColumn, const std::string_view& message, Args&&... args)
