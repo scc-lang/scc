@@ -78,6 +78,7 @@ private:
                 case ')':
                 case ';':
                 case ',':
+                case '=':
                     GetChar();
                     return Token { ch, m_line, m_column - 1 };
 

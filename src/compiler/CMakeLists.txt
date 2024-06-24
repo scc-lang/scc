@@ -8,6 +8,8 @@ target_sources(scc.compiler PUBLIC FILE_SET CXX_MODULES FILES
     ast_scope.cpp
     ast_statement.cpp
     ast_string_literal_expression.cpp
+    ast_type_info.cpp
+    ast_variable_declaration.cpp
     ast_visitor.cpp
     exception.cpp
     lexer.cpp

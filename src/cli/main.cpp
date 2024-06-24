@@ -16,7 +16,7 @@ struct Options {
 
 void PrintHelp(const std::string_view& optionsHelp);
 void CompileAndRun(const Options& options);
-std::shared_ptr<scc::compiler::AstScope> Parse(const std::string& file);
+scc::compiler::AstScope Parse(const std::string& file);
 
 int main(int argc, const char* const argv[])
 {
@@ -71,7 +71,7 @@ void CompileAndRun(const Options& options)
     std::filesystem::create_directories(workingFolder);
 
     auto outFile = workingFolder / (filePath.filename().string() + ".cpp");
-    scc::compiler::Translator { std::make_shared<std::ofstream>(outFile) }.VisitAstScope(*scope);
+    scc::compiler::Translator { std::make_shared<std::ofstream>(outFile) }.VisitAstScope(scope);
 
     // Invoke clang++ to compile.
     char result[PATH_MAX];
@@ -86,9 +86,9 @@ void CompileAndRun(const Options& options)
     std::system(exePath.string().c_str());
 }
 
-std::shared_ptr<scc::compiler::AstScope> Parse(const std::string& file)
+scc::compiler::AstScope Parse(const std::string& file)
 {
-    auto scope = std::make_shared<scc::compiler::AstScope>();
+    scc::compiler::AstScope scope {};
     scc::compiler::Lexer lexer { std::make_shared<std::ifstream>(file) };
     scc::compiler::Parser {}.ParseCompileUnit(scope, lexer);
     return std::move(scope);

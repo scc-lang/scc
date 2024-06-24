@@ -7,9 +7,9 @@ using namespace scc::compiler;
 
 class ParserTest : public testing::Test {
 protected:
-    std::shared_ptr<AstScope> Parse(std::string content)
+    AstScope Parse(std::string content)
     {
-        auto scope = std::make_shared<AstScope>();
+        AstScope scope {};
         Lexer lexer { std::make_shared<std::istringstream>(std::move(content)) };
         Parser {}.ParseCompileUnit(scope, lexer);
         return std::move(scope);
@@ -17,16 +17,24 @@ protected:
 
     std::unique_ptr<AstFunctionCallExpression> ParseFunctionCallExpression(std::string content)
     {
-        auto scope = std::make_shared<AstScope>();
+        AstScope scope {};
         Lexer lexer { std::make_shared<std::istringstream>(std::move(content)) };
         return std::unique_ptr<AstFunctionCallExpression> { dynamic_cast<AstFunctionCallExpression*>(Parser {}.ParseFunctionCallExpression(scope, lexer).release()) };
+    }
+
+    AstScope ParseStatement(std::string content)
+    {
+        AstScope scope {};
+        Lexer lexer { std::make_shared<std::istringstream>(std::move(content)) };
+        Parser {}.ParseStatement(scope, lexer);
+        return std::move(scope);
     }
 };
 
 TEST_F(ParserTest, ParseEmptyContent)
 {
     auto scope = Parse("");
-    ASSERT_TRUE(scope->statements.empty());
+    ASSERT_TRUE(scope.statements.empty());
 }
 
 TEST_F(ParserTest, ParseFunctionCallExpression)
@@ -59,4 +67,56 @@ TEST_F(ParserTest, ParseFunctionCallExpression)
 
     auto arg3 = dynamic_cast<AstStringLiteralExpression*>(func->argsExpression[2].get());
     ASSERT_EQ(arg3->value, "123");
+}
+
+TEST_F(ParserTest, ParseVariableDeclarationStatement)
+{
+    auto scope = ParseStatement("int a;");
+    ASSERT_EQ(scope.variableDeclarations.size(), 1);
+    {
+        const auto& variableDeclaration = scope.variableDeclarations[0];
+        ASSERT_EQ(variableDeclaration->typeInfo.fullName, "int");
+        ASSERT_EQ(variableDeclaration->name, "a");
+        ASSERT_EQ(variableDeclaration->initExpression, nullptr);
+    }
+
+    scope = ParseStatement("int a = foo();");
+    ASSERT_EQ(scope.variableDeclarations.size(), 1);
+    {
+        const auto& variableDeclaration = scope.variableDeclarations[0];
+        ASSERT_EQ(variableDeclaration->typeInfo.fullName, "int");
+        ASSERT_EQ(variableDeclaration->name, "a");
+
+        const auto* initExpression = dynamic_cast<AstFunctionCallExpression*>(variableDeclaration->initExpression.get());
+        ASSERT_EQ(initExpression->argsExpression.size(), 0);
+
+        auto identifier = dynamic_cast<AstIdentifierExpression*>(initExpression->funcExpression.get());
+        ASSERT_EQ(identifier->fullName, "foo");
+    }
+
+    scope = ParseStatement("int a, int b = foo(), int c;");
+    ASSERT_EQ(scope.variableDeclarations.size(), 3);
+    {
+        const auto& variableDeclaration = scope.variableDeclarations[0];
+        ASSERT_EQ(variableDeclaration->typeInfo.fullName, "int");
+        ASSERT_EQ(variableDeclaration->name, "a");
+        ASSERT_EQ(variableDeclaration->initExpression, nullptr);
+    }
+    {
+        const auto& variableDeclaration = scope.variableDeclarations[1];
+        ASSERT_EQ(variableDeclaration->typeInfo.fullName, "int");
+        ASSERT_EQ(variableDeclaration->name, "b");
+
+        const auto* initExpression = dynamic_cast<AstFunctionCallExpression*>(variableDeclaration->initExpression.get());
+        ASSERT_EQ(initExpression->argsExpression.size(), 0);
+
+        auto identifier = dynamic_cast<AstIdentifierExpression*>(initExpression->funcExpression.get());
+        ASSERT_EQ(identifier->fullName, "foo");
+    }
+    {
+        const auto& variableDeclaration = scope.variableDeclarations[2];
+        ASSERT_EQ(variableDeclaration->typeInfo.fullName, "int");
+        ASSERT_EQ(variableDeclaration->name, "c");
+        ASSERT_EQ(variableDeclaration->initExpression, nullptr);
+    }
 }
