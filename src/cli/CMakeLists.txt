@@ -9,4 +9,5 @@ add_executable(scc
 )
 target_link_libraries(scc
     scc.cli
+    scc.compiler
 )

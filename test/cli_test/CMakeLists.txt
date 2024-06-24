@@ -1,5 +1,6 @@
 add_executable(scc.cli.test
     commandline_processor_test.cpp
+    main_test.cpp
 )
 target_link_libraries(scc.cli.test
     scc.cli
