@@ -6,6 +6,7 @@ module;
 
 export module scc.compiler:parser;
 import :ast_expression;
+import :ast_expression_statement;
 import :ast_function_call_expression;
 import :ast_identifier_expression;
 import :ast_string_literal_expression;
@@ -34,6 +35,8 @@ export struct Parser {
     //  : expression_statement
     void ParseStatement(std::shared_ptr<AstScope>& scope, Lexer& lexer)
     {
+        assert(scope);
+
         if (lexer.PeekToken().type == ';') {
             lexer.GetToken();
             return;
@@ -46,8 +49,19 @@ export struct Parser {
     //  : expression ';'
     void ParseExpressionStatement(std::shared_ptr<AstScope>& scope, Lexer& lexer)
     {
-        ParseExpression(scope, lexer);
-        lexer.GetRequiredToken(';');
+        assert(scope);
+
+        auto expression = ParseExpression(scope, lexer);
+        assert(expression);
+
+        auto sourceRange = expression->sourceRange;
+
+        auto lastToken = lexer.GetRequiredToken(';');
+
+        sourceRange.endLine = lastToken.endLine;
+        sourceRange.endColumn = lastToken.endColumn;
+
+        scope->statements.push_back(std::make_unique<AstExpressionStatement>(std::move(sourceRange), std::move(expression)));
     }
 
     // expression
@@ -55,6 +69,8 @@ export struct Parser {
     //  | function_call_expression
     std::unique_ptr<AstExpression> ParseExpression(std::shared_ptr<AstScope>& scope, Lexer& lexer)
     {
+        assert(scope);
+
         if (lexer.PeekToken().type == TOKEN_STRING) {
             return ParseStringLiteralExpression(scope, lexer);
         } else {
@@ -67,6 +83,8 @@ export struct Parser {
     //  | identifier_expression '(' (expression ',')* expression ')'
     std::unique_ptr<AstExpression> ParseFunctionCallExpression(std::shared_ptr<AstScope>& scope, Lexer& lexer)
     {
+        assert(scope);
+
         auto funcExpression = ParseIdentifierExpression(scope, lexer);
         auto sourceRange = funcExpression->sourceRange;
 
@@ -91,6 +109,8 @@ export struct Parser {
     //  : (IDENTIFIER '::')* IDENTIFIER
     std::unique_ptr<AstExpression> ParseIdentifierExpression(std::shared_ptr<AstScope>& scope, Lexer& lexer)
     {
+        assert(scope);
+
         auto token = lexer.GetRequiredToken(TOKEN_IDENTIFIER);
         auto sourceRange = SourceRange { token.startLine, token.startColumn, token.endLine, token.endColumn };
         auto fullName = std::string { std::move(token.string()) };
@@ -111,6 +131,8 @@ export struct Parser {
     //  : TOKEN_STRING
     std::unique_ptr<AstExpression> ParseStringLiteralExpression(std::shared_ptr<AstScope>& scope, Lexer& lexer)
     {
+        assert(scope);
+
         auto token = lexer.GetRequiredToken(TOKEN_STRING);
         return std::make_unique<AstStringLiteralExpression>(SourceRange { token.startLine, token.startColumn, token.endLine, token.endColumn }, std::move(token.string()));
     }

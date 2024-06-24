@@ -1,5 +1,6 @@
 add_library(scc.compiler)
 target_sources(scc.compiler PUBLIC FILE_SET CXX_MODULES FILES
+    ast_expression_statement.cpp
     ast_expression.cpp
     ast_function_call_expression.cpp
     ast_identifier_expression.cpp
@@ -7,10 +8,13 @@ target_sources(scc.compiler PUBLIC FILE_SET CXX_MODULES FILES
     ast_scope.cpp
     ast_statement.cpp
     ast_string_literal_expression.cpp
+    ast_visitor.cpp
     exception.cpp
     lexer.cpp
     module.cpp
     parser.cpp
+    printer.cpp
     source_range.cpp
     token.cpp
+    translator.cpp
 )

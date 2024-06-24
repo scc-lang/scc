@@ -11,6 +11,7 @@ export struct AstStatement;
 
 export struct AstScope final {
     std::vector<std::unique_ptr<AstStatement>> statements {};
+    std::weak_ptr<AstScope> parentScope {};
 };
 
 }
