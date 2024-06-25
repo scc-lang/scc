@@ -6,6 +6,7 @@ module;
 
 export module scc.compiler:translator;
 import :ast_binary_expression;
+import :ast_conditional_statement;
 import :ast_expression_statement;
 import :ast_function_call_expression;
 import :ast_identifier_expression;
@@ -25,6 +26,14 @@ export struct Translator final : AstVisitor {
     }
 
     void VisitAstBinaryExpression(const AstBinaryExpression& binaryExpression) override
+    {
+    }
+
+    void VisitAstBreakStatement(const AstBreakStatement& breakStatement) override
+    {
+    }
+
+    void VisitAstConditionalStatement(const AstConditionalStatement& conditionalStatement) override
     {
     }
 
@@ -60,6 +69,14 @@ export struct Translator final : AstVisitor {
         } else {
             m_printer.Print(identifierExpression.fullName);
         }
+    }
+
+    void VisitAstIntegerLiteralExpression(const AstIntegerLiteralExpression& integerLiteralExpression) override
+    {
+    }
+
+    void VisitAstLoopStatement(const AstLoopStatement& forStatement) override
+    {
     }
 
     void VisitAstScope(const AstScope& scope) override
@@ -99,7 +116,11 @@ export struct Translator final : AstVisitor {
         m_printer.Print("\"");
     }
 
-    void VisitAstVariableDeclaration(const AstVariableDeclaration&) override
+    void VisitAstVariableDeclaration(const AstVariableDeclaration& variableDeclaration) override
+    {
+    }
+
+    void VisitAstVariableDefinitionStatement(const AstVariableDefinitionStatement& variableDefinitionStatemet) override
     {
     }
 

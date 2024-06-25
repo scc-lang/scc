@@ -7,15 +7,20 @@ module;
 
 export module scc.compiler:parser;
 import :ast_binary_expression;
+import :ast_break_statement;
+import :ast_conditional_statement;
 import :ast_expression;
 import :ast_expression_statement;
 import :ast_function_call_expression;
 import :ast_identifier_expression;
+import :ast_integer_literal_expression;
+import :ast_loop_statement;
 import :ast_string_literal_expression;
 import :ast_scope;
 import :ast_statement;
 import :ast_type_info;
 import :ast_variable_declaration;
+import :ast_variable_definition_statement;
 import :exception;
 import :lexer;
 import :source_range;
@@ -35,8 +40,8 @@ export struct Parser {
 
     // statement
     //  : /* empty statement */ ';'
-    //  : declaration_statement
-    //  | expression_statement
+    //  : declaration_or_expression_statement
+    //  | for_loop_statement
     void ParseStatement(AstScope& scope, Lexer& lexer)
     {
         const auto& token = lexer.PeekToken();
@@ -47,34 +52,40 @@ export struct Parser {
             return;
         }
 
-        if (token.type == TOKEN_IDENTIFIER) {
+        switch (token.type) {
+        case TOKEN_IDENTIFIER:
             // For a identifier token, this statement maybe an expression statement or
-            // a declaration_statement, depends on the value of the identifier.
-            // If the identifier is a type identifier, then it is a declaration_statement,
-            // otherwise, it is an expression statement.
+            // a variable declaration statement, depends on the value of the identifier.
+            // If the identifier is a type identifier, then it is a variable declaration
+            // statement, otherwise it is an expression statement.
+            ParseVariableDeclarationOrExpressionStatement(scope, lexer);
+            break;
 
-            // Parse the identifier expression.
-            auto identifier = std::unique_ptr<AstIdentifierExpression>(static_cast<AstIdentifierExpression*>(ParseIdentifierExpression(scope, lexer).release()));
-            assert(identifier);
+        case TOKEN_FOR:
+            ParseForStatement(scope, lexer);
+            break;
 
-            // Query the identifer in the scope.
-            if (auto typeInfo = scope.QueryTypeInfo(identifier->fullName)) {
-                ParseDeclarationStatement(scope, lexer, std::move(identifier));
-            } else {
-                ParseExpressionStatement(scope, lexer, std::move(identifier));
-            }
-        } else {
+        default:
             ParseExpressionStatement(scope, lexer);
+            break;
         }
     }
 
-    // declaration_statement
+    // variable_declaration_or_expression_statement
     //  : variable_declaration_statement
-    void ParseDeclarationStatement(AstScope& scope, Lexer& lexer, std::unique_ptr<AstIdentifierExpression> typeIdentifierExpression)
+    //  | expression_statement
+    void ParseVariableDeclarationOrExpressionStatement(AstScope& scope, Lexer& lexer)
     {
-        assert(typeIdentifierExpression);
+        // Parse the identifier expression.
+        auto identifier = std::unique_ptr<AstIdentifierExpression>(static_cast<AstIdentifierExpression*>(ParseIdentifierExpression(scope, lexer).release()));
+        assert(identifier);
 
-        ParseVariableDeclarationStatement(scope, lexer, std::move(typeIdentifierExpression));
+        // Query the identifer in the scope.
+        if (auto typeInfo = scope.QueryTypeInfo(identifier->fullName)) {
+            ParseVariableDeclarationStatement(scope, lexer, std::move(identifier));
+        } else {
+            ParseExpressionStatement(scope, lexer, std::move(identifier));
+        }
     }
 
     // variable_declaration_statement
@@ -119,11 +130,12 @@ export struct Parser {
             sourceRange.endLine = initExpression->sourceRange.endLine;
             sourceRange.endColumn = initExpression->sourceRange.endColumn;
         } else {
-            sourceRange.endLine = identifier.endLine;
-            sourceRange.endColumn = identifier.endColumn;
+            sourceRange.endLine = identifier.sourceRange.endLine;
+            sourceRange.endColumn = identifier.sourceRange.endColumn;
         }
 
-        scope.variableDeclarations.push_back(std::make_unique<AstVariableDeclaration>(std::move(sourceRange), *type, std::move(identifier.string()), std::move(initExpression)));
+        scope.variableDeclarations.push_back(std::make_unique<AstVariableDeclaration>(sourceRange, *type, std::move(identifier.string()), std::move(initExpression)));
+        scope.statements.push_back(std::make_unique<AstVariableDefinitionStatement>(std::move(sourceRange), *scope.variableDeclarations.back()));
     }
 
     // expression_statement
@@ -137,8 +149,8 @@ export struct Parser {
 
         auto lastToken = lexer.GetRequiredToken(';');
 
-        sourceRange.endLine = lastToken.endLine;
-        sourceRange.endColumn = lastToken.endColumn;
+        sourceRange.endLine = lastToken.sourceRange.endLine;
+        sourceRange.endColumn = lastToken.sourceRange.endColumn;
 
         scope.statements.push_back(std::make_unique<AstExpressionStatement>(std::move(sourceRange), std::move(expression)));
     }
@@ -312,12 +324,15 @@ export struct Parser {
     // primary_expression
     //  : identifier_expression
     //  | function_call_expression
+    //  | integer_literal_expression
     //  | string_literal_expression
     //  | '(' expression ')'
     std::unique_ptr<AstExpression> ParsePrimaryExpression(AstScope& scope, Lexer& lexer, std::unique_ptr<AstIdentifierExpression> preExpression = nullptr)
     {
         if (preExpression) {
             return ParseFunctionCallExpression(scope, lexer, std::move(preExpression));
+        } else if (lexer.PeekToken().type == TOKEN_INTEGER) {
+            return ParseIntegerLiteralExpression(scope, lexer);
         } else if (lexer.PeekToken().type == TOKEN_STRING) {
             return ParseStringLiteralExpression(scope, lexer);
         } else if (lexer.PeekToken().type == '(') {
@@ -353,8 +368,8 @@ export struct Parser {
             }
 
             auto endToken = lexer.GetRequiredToken(')');
-            sourceRange.endLine = endToken.endLine;
-            sourceRange.endColumn = endToken.endColumn;
+            sourceRange.endLine = endToken.sourceRange.endLine;
+            sourceRange.endColumn = endToken.sourceRange.endColumn;
 
             return std::make_unique<AstFunctionCallExpression>(std::move(sourceRange), std::move(funcExpression), std::move(args));
         }
@@ -365,14 +380,14 @@ export struct Parser {
     std::unique_ptr<AstExpression> ParseIdentifierExpression(AstScope& scope, Lexer& lexer)
     {
         auto token = lexer.GetRequiredToken(TOKEN_IDENTIFIER);
-        auto sourceRange = SourceRange { token.startLine, token.startColumn, token.endLine, token.endColumn };
+        auto sourceRange = std::move(token.sourceRange);
         auto fullName = std::string { std::move(token.string()) };
 
         while (lexer.PeekToken().type == TOKEN_SCOPE) {
             lexer.GetToken();
             token = lexer.GetRequiredToken(TOKEN_IDENTIFIER);
-            sourceRange.endLine = token.endLine;
-            sourceRange.endColumn = token.endColumn;
+            sourceRange.endLine = token.sourceRange.endLine;
+            sourceRange.endColumn = token.sourceRange.endColumn;
             fullName += "::";
             fullName += std::move(token.string());
         }
@@ -380,12 +395,73 @@ export struct Parser {
         return std::make_unique<AstIdentifierExpression>(std::move(sourceRange), std::move(fullName));
     }
 
+    // for_statement
+    //  : FOR '(' declaration_or_expression_statement expression? ';' expression ')' '{' statements* '}'
+    //  : FOR '(' expression? ';' expression? ';' expression ')' '{' statements* '}'
+    void ParseForStatement(AstScope& scope, Lexer& lexer)
+    {
+        auto forScope = AstScope { &scope };
+        auto iterationExpression = std::unique_ptr<AstExpression> {};
+
+        const auto& startToken = lexer.GetRequiredToken(TOKEN_FOR);
+
+        // Parse header.
+        lexer.GetRequiredToken('(');
+        if (lexer.PeekToken().type != ';') {
+            ParseVariableDeclarationOrExpressionStatement(forScope, lexer);
+        } else {
+            lexer.GetRequiredToken(';');
+        }
+
+        if (lexer.PeekToken().type != ';') {
+            auto conditionalExpression = ParseExpression(forScope, lexer);
+
+            auto falseStatements = std::vector<std::unique_ptr<AstStatement>> {};
+            falseStatements.push_back(std::make_unique<AstBreakStatement>(conditionalExpression->sourceRange));
+
+            forScope.statements.push_back(std::make_unique<AstConditionalStatement>(
+                conditionalExpression->sourceRange,
+                std::move(conditionalExpression),
+                std::vector<std::unique_ptr<AstStatement>> {}, std::move(falseStatements)));
+        }
+        lexer.GetRequiredToken(';');
+
+        if (lexer.PeekToken().type != ')') {
+            iterationExpression = ParseExpression(forScope, lexer);
+        }
+        lexer.GetRequiredToken(')');
+
+        // Parse body.
+        lexer.GetRequiredToken('{');
+        while (lexer.PeekToken().type != '}') {
+            ParseStatement(forScope, lexer);
+        }
+        const auto& lastToken = lexer.GetRequiredToken('}');
+
+        // Add iteration statements.
+        if (iterationExpression) {
+            forScope.statements.push_back(std::make_unique<AstExpressionStatement>(lastToken.sourceRange, std::move(iterationExpression)));
+        }
+
+        // Finish for statement parsing, add to parent scope.
+        scope.statements.push_back(std::make_unique<AstLoopStatement>(
+            SourceRange { startToken.sourceRange, lastToken.sourceRange }, std::move(forScope)));
+    }
+
+    // integer_literal_expression
+    //  : TOKEN_INTEGER
+    std::unique_ptr<AstExpression> ParseIntegerLiteralExpression(AstScope& scope, Lexer& lexer)
+    {
+        auto token = lexer.GetRequiredToken(TOKEN_INTEGER);
+        return std::make_unique<AstIntegerLiteralExpression>(std::move(token.sourceRange), token.integer());
+    }
+
     // string_literal_expression
     //  : TOKEN_STRING
     std::unique_ptr<AstExpression> ParseStringLiteralExpression(AstScope& scope, Lexer& lexer)
     {
         auto token = lexer.GetRequiredToken(TOKEN_STRING);
-        return std::make_unique<AstStringLiteralExpression>(SourceRange { token.startLine, token.startColumn, token.endLine, token.endColumn }, std::move(token.string()));
+        return std::make_unique<AstStringLiteralExpression>(std::move(token.sourceRange), std::move(token.string()));
     }
 };
 

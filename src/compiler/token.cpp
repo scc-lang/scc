@@ -2,10 +2,12 @@ module;
 
 #include <any>
 #include <cassert>
+#include <cstdint>
 #include <format>
 #include <string>
 
 export module scc.compiler:token;
+import :source_range;
 
 namespace scc::compiler {
 
@@ -15,6 +17,7 @@ export enum TokenType {
     TOKEN_IDENTIFIER,
     TOKEN_SCOPE,
     TOKEN_STRING,
+    TOKEN_INTEGER,
     TOKEN_LESS_EQUAL,
     TOKEN_GREATER_EQUAL,
     TOKEN_SHIFT_LEFT,
@@ -29,14 +32,12 @@ export enum TokenType {
     TOKEN_BIT_AND_ASSIGNMENT,
     TOKEN_BIT_XOR_ASSIGNMENT,
     TOKEN_BIT_OR_ASSIGNMENT,
+    TOKEN_FOR,
 };
 
 export struct Token final {
     int type {};
-    int startLine {};
-    int startColumn {};
-    int endLine {};
-    int endColumn {};
+    SourceRange sourceRange;
     std::any value {};
 
     Token(int type, int startLine, int startColumn)
@@ -50,11 +51,13 @@ export struct Token final {
     }
 
     Token(int type, int startLine, int startColumn, int endLine, int endColumn, std::any value)
+        : Token { type, SourceRange { startLine, startColumn, endLine, endColumn }, std::move(value) }
+    {
+    }
+
+    Token(int type, SourceRange sourceRange, std::any value)
         : type { type }
-        , startLine { startLine }
-        , startColumn { startColumn }
-        , endLine { endLine }
-        , endColumn { endColumn }
+        , sourceRange { std::move(sourceRange) }
         , value { std::move(value) }
     {
     }
@@ -62,6 +65,11 @@ export struct Token final {
     std::string& string()
     {
         return *std::any_cast<std::string>(&value);
+    }
+
+    uint64_t integer()
+    {
+        return *std::any_cast<uint64_t>(&value);
     }
 };
 

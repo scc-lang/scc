@@ -33,7 +33,7 @@ export struct Lexer final {
     {
         auto token = GetToken();
         if (token.type != tokenType) {
-            throw Exception(token.startLine, token.startColumn, token.endLine, token.endColumn, "expected '{}'", (TokenType)tokenType);
+            throw Exception(token.sourceRange, "expected '{}'", (TokenType)tokenType);
         }
         return std::move(token);
     }
@@ -56,6 +56,8 @@ private:
                 GetChar();
             } else if (isalpha(ch) || ch == '_') {
                 return ReadIdentifier();
+            } else if (isdigit(ch)) {
+                return ReadInteger();
             } else {
                 switch (ch) {
                 case '#':
@@ -183,6 +185,8 @@ private:
                 case '=':
                 case '(':
                 case ')':
+                case '{':
+                case '}':
                 case ';':
                 case ',':
                     GetChar();
@@ -213,7 +217,12 @@ private:
         for (auto ch = PeekChar(); isalnum(ch) || ch == '_'; ch = PeekChar()) {
             str += (char)GetChar();
         }
-        return Token { TOKEN_IDENTIFIER, startLine, startColumn, m_line, m_column - 1, std::move(str) };
+
+        if (str == "for") {
+            return Token { TOKEN_FOR, startLine, startColumn, m_column - 1 };
+        } else {
+            return Token { TOKEN_IDENTIFIER, startLine, startColumn, m_line, m_column - 1, std::move(str) };
+        }
     }
 
     Token ReadString()
@@ -240,6 +249,22 @@ private:
             GetChar();
             return Token { TOKEN_STRING, startLine, startColumn, m_line, m_column - 1, std::move(str) };
         }
+    }
+
+    Token ReadInteger()
+    {
+        assert(std::isdigit(PeekChar()));
+
+        int startLine = m_line;
+        int startColumn = m_column;
+
+        uint64_t v {};
+        for (auto ch = PeekChar(); std::isdigit(ch); ch = PeekChar()) {
+            v *= 10;
+            v += GetChar() - '0';
+            // TODO: handle overflow
+        }
+        return Token { TOKEN_INTEGER, startLine, startColumn, m_line, m_column - 1, v };
     }
 
     int PeekChar()
