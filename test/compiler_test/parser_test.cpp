@@ -432,16 +432,24 @@ TEST_F(ParserTest, ParseForLoopStatement)
     auto scope = ParseStatement("for (;;) {}");
     ASSERT_EQ(scope.statements.size(), 1);
 
-    auto forStatement = dynamic_cast<AstLoopStatement*>(scope.statements[0].get());
-    ASSERT_EQ(forStatement->scope.statements.size(), 0);
-    ASSERT_EQ(forStatement->scope.variableDeclarations.size(), 0);
+    auto forStatement = dynamic_cast<AstForLoopStatement*>(scope.statements[0].get());
+    ASSERT_EQ(forStatement->initScope.statements.size(), 0);
+    ASSERT_EQ(forStatement->initScope.variableDeclarations.size(), 0);
+    ASSERT_EQ(forStatement->conditionalExpression, nullptr);
+    ASSERT_EQ(forStatement->iterationExpression, nullptr);
+    ASSERT_EQ(forStatement->bodyScope.statements.size(), 0);
+    ASSERT_EQ(forStatement->bodyScope.variableDeclarations.size(), 0);
 
     scope = ParseStatement("for (int a, int b = 10; a < b; a += 2) {}");
     ASSERT_EQ(scope.statements.size(), 1);
 
-    forStatement = dynamic_cast<AstLoopStatement*>(scope.statements[0].get());
-    ASSERT_EQ(forStatement->scope.statements.size(), 4);
-    ASSERT_EQ(forStatement->scope.variableDeclarations.size(), 2);
+    forStatement = dynamic_cast<AstForLoopStatement*>(scope.statements[0].get());
+    ASSERT_EQ(forStatement->initScope.statements.size(), 2);
+    ASSERT_EQ(forStatement->initScope.variableDeclarations.size(), 2);
+    ASSERT_NE(forStatement->conditionalExpression, nullptr);
+    ASSERT_NE(forStatement->iterationExpression, nullptr);
+    ASSERT_EQ(forStatement->bodyScope.statements.size(), 0);
+    ASSERT_EQ(forStatement->bodyScope.variableDeclarations.size(), 0);
 
     scope = ParseStatement(R"(
 for (int a, int b = 10; a < b; a += 2) {
@@ -449,11 +457,15 @@ for (int a, int b = 10; a < b; a += 2) {
 })");
     ASSERT_EQ(scope.statements.size(), 1);
 
-    forStatement = dynamic_cast<AstLoopStatement*>(scope.statements[0].get());
-    ASSERT_EQ(forStatement->scope.statements.size(), 5);
-    ASSERT_EQ(forStatement->scope.variableDeclarations.size(), 2);
+    forStatement = dynamic_cast<AstForLoopStatement*>(scope.statements[0].get());
+    ASSERT_EQ(forStatement->initScope.statements.size(), 2);
+    ASSERT_EQ(forStatement->initScope.variableDeclarations.size(), 2);
+    ASSERT_NE(forStatement->conditionalExpression, nullptr);
+    ASSERT_NE(forStatement->iterationExpression, nullptr);
+    ASSERT_EQ(forStatement->bodyScope.statements.size(), 1);
+    ASSERT_EQ(forStatement->bodyScope.variableDeclarations.size(), 0);
 
-    auto funcStatement = dynamic_cast<AstExpressionStatement*>(forStatement->scope.statements[3].get());
+    auto funcStatement = dynamic_cast<AstExpressionStatement*>(forStatement->bodyScope.statements[0].get());
     ASSERT_NE(funcStatement, nullptr);
 
     auto functionCallExpression = dynamic_cast<AstFunctionCallExpression*>(funcStatement->expression.get());

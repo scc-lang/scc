@@ -1,0 +1,4 @@
+for (int from, int to = 10, int sum; from < to; from += 1) {
+    sum += from;
+    std::println("from 1 to {}, sum = {}", from, sum);
+}

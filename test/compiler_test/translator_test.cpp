@@ -51,3 +51,8 @@ TEST_F(TranslatorTest, HelloWorld)
 {
     RunTest("hello_world");
 }
+
+TEST_F(TranslatorTest, ForStatement)
+{
+    RunTest("for_statement");
+}

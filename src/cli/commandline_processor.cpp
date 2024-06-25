@@ -26,8 +26,15 @@ export struct CommandlineProcessor {
             .action = std::move(action),
         });
         m_shortOptions.emplace(shortSwitch, option);
-        m_longOptions.emplace(std::move(longSwitch), option);
+        if (!longSwitch.empty()) {
+            m_longOptions.emplace(std::move(longSwitch), option);
+        }
         m_options.push_back(std::move(option));
+    }
+
+    void RegisterOption(char shortSwitch, std::string description, std::function<void()> action)
+    {
+        RegisterOption(shortSwitch, "", std::move(description), std::move(action));
     }
 
     void RegisterOption(std::string longSwitch, std::string description, std::function<void()> action)
@@ -72,7 +79,11 @@ export struct CommandlineProcessor {
     {
         std::string str { "Options:\n\n" };
         for (const auto& opt : m_options) {
-            str += std::format("\t-{}, --{}\t\t{}\n", opt->shortSwitch, opt->longSwitch, opt->description);
+            if (opt->longSwitch.empty()) {
+                str += std::format("\t-{}\t\t\t{}\n", opt->shortSwitch, opt->description);
+            } else {
+                str += std::format("\t-{}, --{}\t\t{}\n", opt->shortSwitch, opt->longSwitch, opt->description);
+            }
         }
         return str;
     }

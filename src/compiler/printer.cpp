@@ -54,7 +54,8 @@ export struct Printer final {
 
     void PushIndent()
     {
-        m_indents.emplace(m_defaultIdent, ' ');
+        int indents = (m_indents.empty() ? 0 : m_indents.top().length()) + m_defaultIdent;
+        m_indents.emplace(indents, ' ');
     }
 
     void PopIndent()
