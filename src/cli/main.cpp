@@ -12,6 +12,7 @@ import scc.compiler;
 struct Options {
     std::string inputFile {};
     bool needHelp {};
+    bool compileOnly {};
 };
 
 void PrintHelp(const std::string_view& optionsHelp);
@@ -24,6 +25,7 @@ int main(int argc, const char* const argv[])
         Options options {};
         scc::cli::CommandlineProcessor cmdProcessor {};
         cmdProcessor.RegisterOption('h', "help", "Print help", [&options] { options.needHelp = true; });
+        cmdProcessor.RegisterOption('c', "Compile only", [&options] { options.compileOnly = true; });
         cmdProcessor.SetCommandLine(argc - 1, argv + 1);
 
         if (options.needHelp) {
@@ -73,17 +75,19 @@ void CompileAndRun(const Options& options)
     auto outFile = workingFolder / (filePath.filename().string() + ".cpp");
     scc::compiler::Translator { std::make_shared<std::ofstream>(outFile) }.VisitAstScope(scope);
 
-    // Invoke clang++ to compile.
-    char result[PATH_MAX];
-    result[readlink("/proc/self/exe", result, PATH_MAX)] = '\0';
-    auto appPath = std::filesystem::path { result }.parent_path();
-    auto stdModulePath = appPath / "std";
-    auto stdLibPath = stdModulePath / "libscc.std.a";
-    auto exePath = workingFolder / "a.out";
-    std::system(std::format("clang++-18 -std=c++20 -fprebuilt-module-path={} -w {} {} -o {}", stdModulePath.string(), outFile.string(), stdLibPath.string(), exePath.string()).c_str());
+    if (!options.compileOnly) {
+        // Invoke clang++ to compile.
+        char result[PATH_MAX];
+        result[readlink("/proc/self/exe", result, PATH_MAX)] = '\0';
+        auto appPath = std::filesystem::path { result }.parent_path();
+        auto stdModulePath = appPath / "std";
+        auto stdLibPath = stdModulePath / "libscc.std.a";
+        auto exePath = workingFolder / "a.out";
+        std::system(std::format("clang++-18 -std=c++20 -fprebuilt-module-path={} -w {} {} -o {}", stdModulePath.string(), outFile.string(), stdLibPath.string(), exePath.string()).c_str());
 
-    // Run.
-    std::system(exePath.string().c_str());
+        // Run.
+        std::system(exePath.string().c_str());
+    }
 }
 
 scc::compiler::AstScope Parse(const std::string& file)

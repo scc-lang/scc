@@ -5,10 +5,10 @@ target_sources(scc.compiler PUBLIC FILE_SET CXX_MODULES FILES
     ast_conditional_statement.cpp
     ast_expression_statement.cpp
     ast_expression.cpp
+    ast_for_loop_statement.cpp
     ast_function_call_expression.cpp
     ast_identifier_expression.cpp
     ast_integer_literal_expression.cpp
-    ast_loop_statement.cpp
     ast_node.cpp
     ast_scope.cpp
     ast_statement.cpp

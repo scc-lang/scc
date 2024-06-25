@@ -8,12 +8,15 @@ export module scc.compiler:translator;
 import :ast_binary_expression;
 import :ast_conditional_statement;
 import :ast_expression_statement;
+import :ast_for_loop_statement;
 import :ast_function_call_expression;
 import :ast_identifier_expression;
+import :ast_integer_literal_expression;
 import :ast_scope;
 import :ast_statement;
 import :ast_string_literal_expression;
 import :ast_variable_declaration;
+import :ast_variable_definition_statement;
 import :ast_visitor;
 import :printer;
 
@@ -27,6 +30,75 @@ export struct Translator final : AstVisitor {
 
     void VisitAstBinaryExpression(const AstBinaryExpression& binaryExpression) override
     {
+        binaryExpression.leftOprand->Visit(*this);
+        switch (binaryExpression.op) {
+        case BinaryOp::Assignment:
+            m_printer.Print(" = ");
+            break;
+        case BinaryOp::MulAssignment:
+            m_printer.Print(" *= ");
+            break;
+        case BinaryOp::DivAssignment:
+            m_printer.Print(" /= ");
+            break;
+        case BinaryOp::ModAssignment:
+            m_printer.Print(" %= ");
+            break;
+        case BinaryOp::AddAssignment:
+            m_printer.Print(" += ");
+            break;
+        case BinaryOp::SubAssignment:
+            m_printer.Print(" -= ");
+            break;
+        case BinaryOp::ShiftLeftAssignment:
+            m_printer.Print(" <<= ");
+            break;
+        case BinaryOp::ShiftRightAssignment:
+            m_printer.Print(" >>= ");
+            break;
+        case BinaryOp::BitAndAssignment:
+            m_printer.Print(" &= ");
+            break;
+        case BinaryOp::BitXorAssignment:
+            m_printer.Print(" ^= ");
+            break;
+        case BinaryOp::BitOrAssignment:
+            m_printer.Print(" |= ");
+            break;
+
+        case BinaryOp::Mul:
+            m_printer.Print(" * ");
+            break;
+        case BinaryOp::Div:
+            m_printer.Print(" / ");
+            break;
+        case BinaryOp::Mod:
+            m_printer.Print(" % ");
+            break;
+        case BinaryOp::Add:
+            m_printer.Print(" + ");
+            break;
+        case BinaryOp::Sub:
+            m_printer.Print(" - ");
+            break;
+
+        case BinaryOp::Less:
+            m_printer.Print(" < ");
+            break;
+        case BinaryOp::LessEqual:
+            m_printer.Print(" <= ");
+            break;
+        case BinaryOp::Greater:
+            m_printer.Print(" > ");
+            break;
+        case BinaryOp::GreaterEqual:
+            m_printer.Print(" >= ");
+            break;
+
+        default:
+            assert(false);
+        }
+        binaryExpression.rightOprand->Visit(*this);
     }
 
     void VisitAstBreakStatement(const AstBreakStatement& breakStatement) override
@@ -35,6 +107,12 @@ export struct Translator final : AstVisitor {
 
     void VisitAstConditionalStatement(const AstConditionalStatement& conditionalStatement) override
     {
+        m_printer.Print("if (");
+        conditionalStatement.conditionalExpression->Visit(*this);
+        m_printer.Println(")");
+        VisitAstScope(conditionalStatement.trueScope);
+        m_printer.Println("else");
+        VisitAstScope(conditionalStatement.falseScope);
     }
 
     void VisitAstExpressionStatement(const AstExpressionStatement& expressionStatement) override
@@ -73,10 +151,34 @@ export struct Translator final : AstVisitor {
 
     void VisitAstIntegerLiteralExpression(const AstIntegerLiteralExpression& integerLiteralExpression) override
     {
+        m_printer.Print("{}", integerLiteralExpression.value);
     }
 
-    void VisitAstLoopStatement(const AstLoopStatement& forStatement) override
+    void VisitAstForLoopStatement(const AstForLoopStatement& forLoopStatement) override
     {
+        m_printer.Println("{{");
+        m_printer.PushIndent();
+
+        for (const auto& statement : forLoopStatement.initScope.statements) {
+            statement->Visit(*this);
+        }
+        m_printer.Println();
+        m_printer.Print("for (;");
+        if (forLoopStatement.conditionalExpression) {
+            m_printer.Print(" ");
+            forLoopStatement.conditionalExpression->Visit(*this);
+        }
+        m_printer.Print(";");
+
+        if (forLoopStatement.iterationExpression) {
+            m_printer.Print(" ");
+            forLoopStatement.iterationExpression->Visit(*this);
+        }
+        m_printer.Println(")");
+        VisitAstScope(forLoopStatement.bodyScope);
+
+        m_printer.PopIndent();
+        m_printer.Println("}}");
     }
 
     void VisitAstScope(const AstScope& scope) override
@@ -118,13 +220,30 @@ export struct Translator final : AstVisitor {
 
     void VisitAstVariableDeclaration(const AstVariableDeclaration& variableDeclaration) override
     {
+        PrintTypeInfo(variableDeclaration.typeInfo);
+        m_printer.Print(" ");
+        m_printer.Print(variableDeclaration.name);
+        m_printer.Print(" {{");
+        if (variableDeclaration.initExpression) {
+            m_printer.Print(" ");
+            variableDeclaration.initExpression->Visit(*this);
+            m_printer.Print(" ");
+        }
+        m_printer.Print("}}");
     }
 
     void VisitAstVariableDefinitionStatement(const AstVariableDefinitionStatement& variableDefinitionStatemet) override
     {
+        VisitAstVariableDeclaration(variableDefinitionStatemet.variableDeclaration);
+        m_printer.Println(";");
     }
 
 private:
+    void PrintTypeInfo(const AstTypeInfo& typeInfo)
+    {
+        m_printer.Print(typeInfo.fullName);
+    }
+
     Printer m_printer;
 };
 

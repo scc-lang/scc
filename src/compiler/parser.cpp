@@ -11,10 +11,10 @@ import :ast_break_statement;
 import :ast_conditional_statement;
 import :ast_expression;
 import :ast_expression_statement;
+import :ast_for_loop_statement;
 import :ast_function_call_expression;
 import :ast_identifier_expression;
 import :ast_integer_literal_expression;
-import :ast_loop_statement;
 import :ast_string_literal_expression;
 import :ast_scope;
 import :ast_statement;
@@ -400,52 +400,41 @@ export struct Parser {
     //  : FOR '(' expression? ';' expression? ';' expression ')' '{' statements* '}'
     void ParseForStatement(AstScope& scope, Lexer& lexer)
     {
-        auto forScope = AstScope { &scope };
-        auto iterationExpression = std::unique_ptr<AstExpression> {};
-
         const auto& startToken = lexer.GetRequiredToken(TOKEN_FOR);
 
         // Parse header.
+        auto forInitScope = AstScope { &scope };
         lexer.GetRequiredToken('(');
         if (lexer.PeekToken().type != ';') {
-            ParseVariableDeclarationOrExpressionStatement(forScope, lexer);
+            ParseVariableDeclarationOrExpressionStatement(forInitScope, lexer);
         } else {
             lexer.GetRequiredToken(';');
         }
 
+        auto conditionalExpression = std::unique_ptr<AstExpression> {};
         if (lexer.PeekToken().type != ';') {
-            auto conditionalExpression = ParseExpression(forScope, lexer);
-
-            auto falseStatements = std::vector<std::unique_ptr<AstStatement>> {};
-            falseStatements.push_back(std::make_unique<AstBreakStatement>(conditionalExpression->sourceRange));
-
-            forScope.statements.push_back(std::make_unique<AstConditionalStatement>(
-                conditionalExpression->sourceRange,
-                std::move(conditionalExpression),
-                std::vector<std::unique_ptr<AstStatement>> {}, std::move(falseStatements)));
+            conditionalExpression = ParseExpression(forInitScope, lexer);
         }
         lexer.GetRequiredToken(';');
 
+        auto iterationExpression = std::unique_ptr<AstExpression> {};
         if (lexer.PeekToken().type != ')') {
-            iterationExpression = ParseExpression(forScope, lexer);
+            iterationExpression = ParseExpression(forInitScope, lexer);
         }
         lexer.GetRequiredToken(')');
 
         // Parse body.
+        auto forBodyScope = AstScope { &forInitScope };
         lexer.GetRequiredToken('{');
         while (lexer.PeekToken().type != '}') {
-            ParseStatement(forScope, lexer);
+            ParseStatement(forBodyScope, lexer);
         }
+
         const auto& lastToken = lexer.GetRequiredToken('}');
 
-        // Add iteration statements.
-        if (iterationExpression) {
-            forScope.statements.push_back(std::make_unique<AstExpressionStatement>(lastToken.sourceRange, std::move(iterationExpression)));
-        }
-
         // Finish for statement parsing, add to parent scope.
-        scope.statements.push_back(std::make_unique<AstLoopStatement>(
-            SourceRange { startToken.sourceRange, lastToken.sourceRange }, std::move(forScope)));
+        scope.statements.push_back(std::make_unique<AstForLoopStatement>(
+            SourceRange { startToken.sourceRange, lastToken.sourceRange }, std::move(forInitScope), std::move(conditionalExpression), std::move(iterationExpression), std::move(forBodyScope)));
     }
 
     // integer_literal_expression
