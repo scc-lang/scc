@@ -404,3 +404,25 @@ TEST_F(ParserTest, ParseArithmeticExpression3)
     leftLeafExpression.reset(dynamic_cast<AstIdentifierExpression*>(leftBinaryExpression->leftOprand.release()));
     ASSERT_EQ(leftLeafExpression->fullName, "a");
 }
+
+TEST_F(ParserTest, ParseArithmeticExpression4)
+{
+    auto parse = [this](std::string content) {
+        return std::unique_ptr<AstBinaryExpression> { dynamic_cast<AstBinaryExpression*>(ParseExpression(std::move(content)).release()) };
+    };
+
+    auto binaryExpression = parse("(a+b)*c");
+    ASSERT_EQ(binaryExpression->op, BinaryOp::Mul);
+
+    auto LeftBinaryExpression = dynamic_cast<AstBinaryExpression*>(binaryExpression->leftOprand.get());
+    ASSERT_EQ(LeftBinaryExpression->op, BinaryOp::Add);
+
+    auto rightLeafExpression = dynamic_cast<AstIdentifierExpression*>(LeftBinaryExpression->rightOprand.get());
+    ASSERT_EQ(rightLeafExpression->fullName, "b");
+
+    auto leftLeafExpression = dynamic_cast<AstIdentifierExpression*>(LeftBinaryExpression->leftOprand.get());
+    ASSERT_EQ(leftLeafExpression->fullName, "a");
+
+    rightLeafExpression = dynamic_cast<AstIdentifierExpression*>(binaryExpression->rightOprand.get());
+    ASSERT_EQ(rightLeafExpression->fullName, "c");
+}

@@ -313,12 +313,18 @@ export struct Parser {
     //  : identifier_expression
     //  | function_call_expression
     //  | string_literal_expression
+    //  | '(' expression ')'
     std::unique_ptr<AstExpression> ParsePrimaryExpression(AstScope& scope, Lexer& lexer, std::unique_ptr<AstIdentifierExpression> preExpression = nullptr)
     {
         if (preExpression) {
             return ParseFunctionCallExpression(scope, lexer, std::move(preExpression));
         } else if (lexer.PeekToken().type == TOKEN_STRING) {
             return ParseStringLiteralExpression(scope, lexer);
+        } else if (lexer.PeekToken().type == '(') {
+            lexer.GetRequiredToken('(');
+            auto expression = ParseExpression(scope, lexer);
+            lexer.GetRequiredToken(')');
+            return std::move(expression);
         } else {
             return ParseFunctionCallExpression(scope, lexer);
         }
