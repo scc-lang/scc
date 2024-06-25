@@ -15,6 +15,8 @@ export enum TokenType {
     TOKEN_IDENTIFIER,
     TOKEN_SCOPE,
     TOKEN_STRING,
+    TOKEN_LESS_EQUAL,
+    TOKEN_GREATER_EQUAL,
 };
 
 export struct Token final {

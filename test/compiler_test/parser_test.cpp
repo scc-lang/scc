@@ -22,6 +22,13 @@ protected:
         return std::unique_ptr<AstFunctionCallExpression> { dynamic_cast<AstFunctionCallExpression*>(Parser {}.ParseFunctionCallExpression(scope, lexer).release()) };
     }
 
+    std::unique_ptr<AstBinaryExpression> ParseRelationalExpression(std::string content)
+    {
+        AstScope scope {};
+        Lexer lexer { std::make_shared<std::istringstream>(std::move(content)) };
+        return std::unique_ptr<AstBinaryExpression> { dynamic_cast<AstBinaryExpression*>(Parser {}.ParseRelationalExpression(scope, lexer).release()) };
+    }
+
     AstScope ParseStatement(std::string content)
     {
         AstScope scope {};
@@ -119,4 +126,48 @@ TEST_F(ParserTest, ParseVariableDeclarationStatement)
         ASSERT_EQ(variableDeclaration->name, "c");
         ASSERT_EQ(variableDeclaration->initExpression, nullptr);
     }
+}
+
+TEST_F(ParserTest, ParseRelationalExpression)
+{
+    auto binaryExpression = ParseRelationalExpression("a < b");
+    ASSERT_EQ(binaryExpression->op, BinaryOp::Less);
+
+    binaryExpression = ParseRelationalExpression("a > b");
+    ASSERT_EQ(binaryExpression->op, BinaryOp::Greater);
+
+    binaryExpression = ParseRelationalExpression("a <= b");
+    ASSERT_EQ(binaryExpression->op, BinaryOp::LessEqual);
+
+    binaryExpression = ParseRelationalExpression("a >= b");
+    ASSERT_EQ(binaryExpression->op, BinaryOp::GreaterEqual);
+
+    binaryExpression = ParseRelationalExpression("a < b(\"abc\") <= c >= d");
+    ASSERT_EQ(binaryExpression->op, BinaryOp::GreaterEqual);
+
+    auto rightOprand = dynamic_cast<AstIdentifierExpression*>(binaryExpression->rightOprand.get());
+    ASSERT_NE(rightOprand, nullptr);
+    ASSERT_EQ(rightOprand->fullName, "d");
+
+    auto leftOprand = dynamic_cast<AstBinaryExpression*>(binaryExpression->leftOprand.get());
+    ASSERT_NE(leftOprand, nullptr);
+    ASSERT_EQ(leftOprand->op, BinaryOp::LessEqual);
+
+    rightOprand = dynamic_cast<AstIdentifierExpression*>(leftOprand->rightOprand.get());
+    ASSERT_NE(rightOprand, nullptr);
+    ASSERT_EQ(rightOprand->fullName, "c");
+
+    leftOprand = dynamic_cast<AstBinaryExpression*>(leftOprand->leftOprand.get());
+    ASSERT_NE(leftOprand, nullptr);
+    ASSERT_EQ(leftOprand->op, BinaryOp::Less);
+
+    auto func = dynamic_cast<AstFunctionCallExpression*>(leftOprand->rightOprand.get());
+    ASSERT_NE(func, nullptr);
+    ASSERT_EQ(dynamic_cast<AstIdentifierExpression*>(func->funcExpression.get())->fullName, "b");
+    ASSERT_EQ(func->argsExpression.size(), 1);
+    ASSERT_EQ(dynamic_cast<AstStringLiteralExpression*>(func->argsExpression[0].get())->value, "abc");
+
+    auto mostLeftOprand = dynamic_cast<AstIdentifierExpression*>(leftOprand->leftOprand.get());
+    ASSERT_NE(mostLeftOprand, nullptr);
+    ASSERT_EQ(mostLeftOprand->fullName, "a");
 }

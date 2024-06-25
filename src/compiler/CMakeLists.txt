@@ -1,5 +1,6 @@
 add_library(scc.compiler)
 target_sources(scc.compiler PUBLIC FILE_SET CXX_MODULES FILES
+    ast_binary_expression.cpp
     ast_expression_statement.cpp
     ast_expression.cpp
     ast_function_call_expression.cpp

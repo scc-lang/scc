@@ -22,6 +22,14 @@ export struct SourceRange {
         , endColumn { endColumn }
     {
     }
+
+    SourceRange(const SourceRange& start, const SourceRange& end)
+        : startLine { start.startLine }
+        , startColumn { start.startColumn }
+        , endLine { end.endLine }
+        , endColumn { end.endColumn }
+    {
+    }
 };
 
 }

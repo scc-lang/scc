@@ -74,6 +74,24 @@ private:
                         return Token { ch, m_line, m_column - 1 };
                     }
 
+                case '<':
+                    GetChar();
+                    if (PeekChar() == '=') {
+                        GetChar();
+                        return Token { TOKEN_LESS_EQUAL, m_line, m_column - 2, m_column - 1 };
+                    } else {
+                        return Token { ch, m_line, m_column - 1 };
+                    }
+
+                case '>':
+                    GetChar();
+                    if (PeekChar() == '=') {
+                        GetChar();
+                        return Token { TOKEN_GREATER_EQUAL, m_line, m_column - 2, m_column - 1 };
+                    } else {
+                        return Token { ch, m_line, m_column - 1 };
+                    }
+
                 case '(':
                 case ')':
                 case ';':
