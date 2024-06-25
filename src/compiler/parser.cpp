@@ -144,10 +144,68 @@ export struct Parser {
     }
 
     // expression
-    //  : relational_expression
+    //  : assignment_expression
     std::unique_ptr<AstExpression> ParseExpression(AstScope& scope, Lexer& lexer, std::unique_ptr<AstIdentifierExpression> preExpression = nullptr)
     {
-        return ParseRelationalExpression(scope, lexer, std::move(preExpression));
+        return ParseAssignmentExpression(scope, lexer, std::move(preExpression));
+    }
+
+    // assignment_expression
+    //  : relational_expression
+    //  | primary_expression ['='|'*='|'/='|'%='|'+='|'-='|'<<='|'>>='|'&='|'^='|'|='] assignment_expression
+    std::unique_ptr<AstExpression> ParseAssignmentExpression(AstScope& scope, Lexer& lexer, std::unique_ptr<AstIdentifierExpression> preExpression = nullptr)
+    {
+        auto expression = ParseRelationalExpression(scope, lexer, std::move(preExpression));
+        assert(expression);
+
+        while (true) {
+            std::optional<scc::compiler::BinaryOp> op;
+            switch (lexer.PeekToken().type) {
+            case '=':
+                op = BinaryOp::Assignment;
+                break;
+            case TOKEN_MUL_ASSIGNMENT:
+                op = BinaryOp::MulAssignment;
+                break;
+            case TOKEN_DIV_ASSIGNMENT:
+                op = BinaryOp::DivAssignment;
+                break;
+            case TOKEN_MOD_ASSIGNMENT:
+                op = BinaryOp::ModAssignment;
+                break;
+            case TOKEN_ADD_ASSIGNMENT:
+                op = BinaryOp::AddAssignment;
+                break;
+            case TOKEN_SUB_ASSIGNMENT:
+                op = BinaryOp::SubAssignment;
+                break;
+            case TOKEN_SHIFT_LEFT_ASSIGNMENT:
+                op = BinaryOp::ShiftLeftAssignment;
+                break;
+            case TOKEN_SHIFT_RIGHT_ASSIGNMENT:
+                op = BinaryOp::ShiftRightAssignment;
+                break;
+            case TOKEN_BIT_AND_ASSIGNMENT:
+                op = BinaryOp::BitAndAssignment;
+                break;
+            case TOKEN_BIT_XOR_ASSIGNMENT:
+                op = BinaryOp::BitXorAssignment;
+                break;
+            case TOKEN_BIT_OR_ASSIGNMENT:
+                op = BinaryOp::BitOrAssignment;
+                break;
+            }
+            if (op) {
+                lexer.GetToken();
+                auto leftOprand = std::move(expression);
+                auto rightOprand = ParseAssignmentExpression(scope, lexer);
+                auto sourceRange = SourceRange { leftOprand->sourceRange, rightOprand->sourceRange };
+                expression = std::make_unique<AstBinaryExpression>(std::move(sourceRange), std::move(leftOprand), *op, std::move(rightOprand));
+            } else {
+                break;
+            }
+        }
+        return std::move(expression);
     }
 
     // relational_expression

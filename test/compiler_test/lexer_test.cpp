@@ -251,20 +251,13 @@ TEST_F(LexerTest, ParsePunctuationChar)
     ASSERT_EQ(token.endLine, 1);
     ASSERT_EQ(token.endColumn, 9);
 
-    lexer = CreateLexer(",=");
+    lexer = CreateLexer(",");
     token = lexer.GetToken();
     ASSERT_EQ(token.type, ',');
     ASSERT_EQ(token.startLine, 1);
     ASSERT_EQ(token.startColumn, 1);
     ASSERT_EQ(token.endLine, 1);
     ASSERT_EQ(token.endColumn, 1);
-
-    token = lexer.GetToken();
-    ASSERT_EQ(token.type, '=');
-    ASSERT_EQ(token.startLine, 1);
-    ASSERT_EQ(token.startColumn, 2);
-    ASSERT_EQ(token.endLine, 1);
-    ASSERT_EQ(token.endColumn, 2);
 }
 
 TEST_F(LexerTest, ParseRelationOperator)
@@ -297,6 +290,169 @@ TEST_F(LexerTest, ParseRelationOperator)
     ASSERT_EQ(token.startColumn, 5);
     ASSERT_EQ(token.endLine, 1);
     ASSERT_EQ(token.endColumn, 6);
+}
+
+TEST_F(LexerTest, ParseShiftOperator)
+{
+    auto lexer = CreateLexer("<<>>");
+    auto token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_SHIFT_LEFT);
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 1);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 2);
+
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_SHIFT_RIGHT);
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 3);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 4);
+}
+
+TEST_F(LexerTest, ParseArithmeticOperator)
+{
+    auto lexer = CreateLexer("+-*/%");
+    auto token = lexer.GetToken();
+    ASSERT_EQ(token.type, '+');
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 1);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 1);
+
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, '-');
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 2);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 2);
+
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, '*');
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 3);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 3);
+
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, '/');
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 4);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 4);
+
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, '%');
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 5);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 5);
+}
+
+TEST_F(LexerTest, ParseBitOperator)
+{
+    auto lexer = CreateLexer("&^|");
+    auto token = lexer.GetToken();
+    ASSERT_EQ(token.type, '&');
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 1);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 1);
+
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, '^');
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 2);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 2);
+
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, '|');
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 3);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 3);
+}
+
+TEST_F(LexerTest, ParseAssignmentOperator)
+{
+    auto lexer = CreateLexer("=*=/=%=+=-=<<=>>=&=^=|=");
+    auto token = lexer.GetToken();
+    ASSERT_EQ(token.type, '=');
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 1);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 1);
+
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_MUL_ASSIGNMENT);
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 2);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 3);
+    
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_DIV_ASSIGNMENT);
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 4);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 5);
+
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_MOD_ASSIGNMENT);
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 6);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 7);
+
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_ADD_ASSIGNMENT);
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 8);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 9);
+
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_SUB_ASSIGNMENT);
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 10);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 11);
+    
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_SHIFT_LEFT_ASSIGNMENT);
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 12);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 14);
+
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_SHIFT_RIGHT_ASSIGNMENT);
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 15);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 17);
+
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_BIT_AND_ASSIGNMENT);
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 18);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 19);
+
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_BIT_XOR_ASSIGNMENT);
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 20);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 21);
+
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_BIT_OR_ASSIGNMENT);
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 22);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 23);
 }
 
 TEST_F(LexerTest, UnexpectedInput)

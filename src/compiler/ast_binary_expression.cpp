@@ -11,6 +11,18 @@ import :source_range;
 namespace scc::compiler {
 
 export enum class BinaryOp {
+    Assignment,
+    MulAssignment,
+    DivAssignment,
+    ModAssignment,
+    AddAssignment,
+    SubAssignment,
+    ShiftLeftAssignment,
+    ShiftRightAssignment,
+    BitAndAssignment,
+    BitXorAssignment,
+    BitOrAssignment,
+
     Less,
     LessEqual,
     Greater,

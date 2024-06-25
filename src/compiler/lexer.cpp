@@ -79,6 +79,14 @@ private:
                     if (PeekChar() == '=') {
                         GetChar();
                         return Token { TOKEN_LESS_EQUAL, m_line, m_column - 2, m_column - 1 };
+                    } else if (PeekChar() == '<') {
+                        GetChar();
+                        if (PeekChar() == '=') {
+                            GetChar();
+                            return Token { TOKEN_SHIFT_LEFT_ASSIGNMENT, m_line, m_column - 3, m_column - 1 };
+                        } else {
+                            return Token { TOKEN_SHIFT_LEFT, m_line, m_column - 2, m_column - 1 };
+                        }
                     } else {
                         return Token { ch, m_line, m_column - 1 };
                     }
@@ -88,15 +96,95 @@ private:
                     if (PeekChar() == '=') {
                         GetChar();
                         return Token { TOKEN_GREATER_EQUAL, m_line, m_column - 2, m_column - 1 };
+                    } else if (PeekChar() == '>') {
+                        GetChar();
+                        if (PeekChar() == '=') {
+                            GetChar();
+                            return Token { TOKEN_SHIFT_RIGHT_ASSIGNMENT, m_line, m_column - 3, m_column - 1 };
+                        } else {
+                            return Token { TOKEN_SHIFT_RIGHT, m_line, m_column - 2, m_column - 1 };
+                        }
                     } else {
                         return Token { ch, m_line, m_column - 1 };
                     }
 
+                case '*':
+                    GetChar();
+                    if (PeekChar() == '=') {
+                        GetChar();
+                        return Token { TOKEN_MUL_ASSIGNMENT, m_line, m_column - 2, m_column - 1 };
+                    } else {
+                        return Token { ch, m_line, m_column - 1 };
+                    }
+
+                case '/':
+                    GetChar();
+                    if (PeekChar() == '=') {
+                        GetChar();
+                        return Token { TOKEN_DIV_ASSIGNMENT, m_line, m_column - 2, m_column - 1 };
+                    } else {
+                        return Token { ch, m_line, m_column - 1 };
+                    }
+
+                case '%':
+                    GetChar();
+                    if (PeekChar() == '=') {
+                        GetChar();
+                        return Token { TOKEN_MOD_ASSIGNMENT, m_line, m_column - 2, m_column - 1 };
+                    } else {
+                        return Token { ch, m_line, m_column - 1 };
+                    }
+
+                case '+':
+                    GetChar();
+                    if (PeekChar() == '=') {
+                        GetChar();
+                        return Token { TOKEN_ADD_ASSIGNMENT, m_line, m_column - 2, m_column - 1 };
+                    } else {
+                        return Token { ch, m_line, m_column - 1 };
+                    }
+
+                case '-':
+                    GetChar();
+                    if (PeekChar() == '=') {
+                        GetChar();
+                        return Token { TOKEN_SUB_ASSIGNMENT, m_line, m_column - 2, m_column - 1 };
+                    } else {
+                        return Token { ch, m_line, m_column - 1 };
+                    }
+
+                case '&':
+                    GetChar();
+                    if (PeekChar() == '=') {
+                        GetChar();
+                        return Token { TOKEN_BIT_AND_ASSIGNMENT, m_line, m_column - 2, m_column - 1 };
+                    } else {
+                        return Token { ch, m_line, m_column - 1 };
+                    }
+
+                case '^':
+                    GetChar();
+                    if (PeekChar() == '=') {
+                        GetChar();
+                        return Token { TOKEN_BIT_XOR_ASSIGNMENT, m_line, m_column - 2, m_column - 1 };
+                    } else {
+                        return Token { ch, m_line, m_column - 1 };
+                    }
+
+                case '|':
+                    GetChar();
+                    if (PeekChar() == '=') {
+                        GetChar();
+                        return Token { TOKEN_BIT_OR_ASSIGNMENT, m_line, m_column - 2, m_column - 1 };
+                    } else {
+                        return Token { ch, m_line, m_column - 1 };
+                    }
+
+                case '=':
                 case '(':
                 case ')':
                 case ';':
                 case ',':
-                case '=':
                     GetChar();
                     return Token { ch, m_line, m_column - 1 };
 
