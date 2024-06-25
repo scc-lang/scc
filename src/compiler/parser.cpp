@@ -2,9 +2,11 @@ module;
 
 #include <cassert>
 #include <memory>
+#include <optional>
 #include <vector>
 
 export module scc.compiler:parser;
+import :ast_binary_expression;
 import :ast_expression;
 import :ast_expression_statement;
 import :ast_function_call_expression;
@@ -142,9 +144,54 @@ export struct Parser {
     }
 
     // expression
-    //  : string_literal_expression
-    //  | function_call_expression
+    //  : relational_expression
     std::unique_ptr<AstExpression> ParseExpression(AstScope& scope, Lexer& lexer, std::unique_ptr<AstIdentifierExpression> preExpression = nullptr)
+    {
+        return ParseRelationalExpression(scope, lexer, std::move(preExpression));
+    }
+
+    // relational_expression
+    //  : primary_expression
+    //  | relational_expression ['<'|'>'|'<='|'>='] primary_expression
+    std::unique_ptr<AstExpression> ParseRelationalExpression(AstScope& scope, Lexer& lexer, std::unique_ptr<AstIdentifierExpression> preExpression = nullptr)
+    {
+        auto expression = ParsePrimaryExpression(scope, lexer, std::move(preExpression));
+        assert(expression);
+
+        while (true) {
+            std::optional<scc::compiler::BinaryOp> op;
+            switch (lexer.PeekToken().type) {
+            case '<':
+                op = BinaryOp::Less;
+                break;
+            case '>':
+                op = BinaryOp::Greater;
+                break;
+            case TOKEN_LESS_EQUAL:
+                op = BinaryOp::LessEqual;
+                break;
+            case TOKEN_GREATER_EQUAL:
+                op = BinaryOp::GreaterEqual;
+                break;
+            }
+            if (op) {
+                lexer.GetToken();
+                auto leftOprand = std::move(expression);
+                auto rightOperand = ParsePrimaryExpression(scope, lexer);
+                auto sourceRange = SourceRange { leftOprand->sourceRange, rightOperand->sourceRange };
+                expression = std::make_unique<AstBinaryExpression>(std::move(sourceRange), std::move(leftOprand), *op, std::move(rightOperand));
+            } else {
+                break;
+            }
+        }
+        return std::move(expression);
+    }
+
+    // primary_expression
+    //  : identifier_expression
+    //  | function_call_expression
+    //  | string_literal_expression
+    std::unique_ptr<AstExpression> ParsePrimaryExpression(AstScope& scope, Lexer& lexer, std::unique_ptr<AstIdentifierExpression> preExpression = nullptr)
     {
         if (preExpression) {
             return ParseFunctionCallExpression(scope, lexer, std::move(preExpression));
@@ -156,28 +203,33 @@ export struct Parser {
     }
 
     // function_call_expression
-    //  : identifier_expression '(' ')'
+    //  : identifier_expression
+    //  | identifier_expression '(' ')'
     //  | identifier_expression '(' (expression ',')* expression ')'
     std::unique_ptr<AstExpression> ParseFunctionCallExpression(AstScope& scope, Lexer& lexer, std::unique_ptr<AstIdentifierExpression> preExpression = nullptr)
     {
         auto funcExpression = preExpression ? std::unique_ptr<AstExpression> { preExpression.release() } : ParseIdentifierExpression(scope, lexer);
-        auto sourceRange = funcExpression->sourceRange;
+        if (lexer.PeekToken().type != '(') {
+            return std::move(funcExpression);
+        } else {
+            auto sourceRange = funcExpression->sourceRange;
 
-        lexer.GetRequiredToken('(');
+            lexer.GetRequiredToken('(');
 
-        std::vector<std::unique_ptr<AstExpression>> args {};
-        while (lexer.PeekToken().type != ')') {
-            if (!args.empty()) {
-                lexer.GetRequiredToken(',');
+            std::vector<std::unique_ptr<AstExpression>> args {};
+            while (lexer.PeekToken().type != ')') {
+                if (!args.empty()) {
+                    lexer.GetRequiredToken(',');
+                }
+                args.push_back(ParseExpression(scope, lexer));
             }
-            args.push_back(ParseExpression(scope, lexer));
+
+            auto endToken = lexer.GetRequiredToken(')');
+            sourceRange.endLine = endToken.endLine;
+            sourceRange.endColumn = endToken.endColumn;
+
+            return std::make_unique<AstFunctionCallExpression>(std::move(sourceRange), std::move(funcExpression), std::move(args));
         }
-
-        auto endToken = lexer.GetRequiredToken(')');
-        sourceRange.endLine = endToken.endLine;
-        sourceRange.endColumn = endToken.endColumn;
-
-        return std::make_unique<AstFunctionCallExpression>(std::move(sourceRange), std::move(funcExpression), std::move(args));
     }
 
     // identifier_expression

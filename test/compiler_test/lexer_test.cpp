@@ -267,6 +267,38 @@ TEST_F(LexerTest, ParsePunctuationChar)
     ASSERT_EQ(token.endColumn, 2);
 }
 
+TEST_F(LexerTest, ParseRelationOperator)
+{
+    auto lexer = CreateLexer("<><=>=");
+    auto token = lexer.GetToken();
+    ASSERT_EQ(token.type, '<');
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 1);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 1);
+
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, '>');
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 2);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 2);
+
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_LESS_EQUAL);
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 3);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 4);
+
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_GREATER_EQUAL);
+    ASSERT_EQ(token.startLine, 1);
+    ASSERT_EQ(token.startColumn, 5);
+    ASSERT_EQ(token.endLine, 1);
+    ASSERT_EQ(token.endColumn, 6);
+}
+
 TEST_F(LexerTest, UnexpectedInput)
 {
     ASSERT_THROW_COMPILER_EXCEPTION(CreateLexer("@").GetToken(), (Exception { 1, 1, "unexpected input" }));
