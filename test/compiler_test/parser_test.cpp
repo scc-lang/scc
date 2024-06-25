@@ -29,6 +29,13 @@ protected:
         return std::unique_ptr<AstBinaryExpression> { dynamic_cast<AstBinaryExpression*>(Parser {}.ParseRelationalExpression(scope, lexer).release()) };
     }
 
+    std::unique_ptr<AstBinaryExpression> ParseAssignmentExpression(std::string content)
+    {
+        AstScope scope {};
+        Lexer lexer { std::make_shared<std::istringstream>(std::move(content)) };
+        return std::unique_ptr<AstBinaryExpression> { dynamic_cast<AstBinaryExpression*>(Parser {}.ParseAssignmentExpression(scope, lexer).release()) };
+    }
+
     AstScope ParseStatement(std::string content)
     {
         AstScope scope {};
@@ -146,28 +153,127 @@ TEST_F(ParserTest, ParseRelationalExpression)
     ASSERT_EQ(binaryExpression->op, BinaryOp::GreaterEqual);
 
     auto rightOprand = dynamic_cast<AstIdentifierExpression*>(binaryExpression->rightOprand.get());
-    ASSERT_NE(rightOprand, nullptr);
     ASSERT_EQ(rightOprand->fullName, "d");
 
     auto leftOprand = dynamic_cast<AstBinaryExpression*>(binaryExpression->leftOprand.get());
-    ASSERT_NE(leftOprand, nullptr);
     ASSERT_EQ(leftOprand->op, BinaryOp::LessEqual);
 
     rightOprand = dynamic_cast<AstIdentifierExpression*>(leftOprand->rightOprand.get());
-    ASSERT_NE(rightOprand, nullptr);
     ASSERT_EQ(rightOprand->fullName, "c");
 
     leftOprand = dynamic_cast<AstBinaryExpression*>(leftOprand->leftOprand.get());
-    ASSERT_NE(leftOprand, nullptr);
     ASSERT_EQ(leftOprand->op, BinaryOp::Less);
 
     auto func = dynamic_cast<AstFunctionCallExpression*>(leftOprand->rightOprand.get());
-    ASSERT_NE(func, nullptr);
     ASSERT_EQ(dynamic_cast<AstIdentifierExpression*>(func->funcExpression.get())->fullName, "b");
     ASSERT_EQ(func->argsExpression.size(), 1);
     ASSERT_EQ(dynamic_cast<AstStringLiteralExpression*>(func->argsExpression[0].get())->value, "abc");
 
     auto mostLeftOprand = dynamic_cast<AstIdentifierExpression*>(leftOprand->leftOprand.get());
-    ASSERT_NE(mostLeftOprand, nullptr);
     ASSERT_EQ(mostLeftOprand->fullName, "a");
+}
+
+TEST_F(ParserTest, ParseAssignmentExpression)
+{
+    auto binaryExpression = ParseAssignmentExpression("a = b");
+    ASSERT_EQ(binaryExpression->op, BinaryOp::Assignment);
+
+    binaryExpression = ParseAssignmentExpression("a *= b");
+    ASSERT_EQ(binaryExpression->op, BinaryOp::MulAssignment);
+
+    binaryExpression = ParseAssignmentExpression("a /= b");
+    ASSERT_EQ(binaryExpression->op, BinaryOp::DivAssignment);
+
+    binaryExpression = ParseAssignmentExpression("a %= b");
+    ASSERT_EQ(binaryExpression->op, BinaryOp::ModAssignment);
+
+    binaryExpression = ParseAssignmentExpression("a += b");
+    ASSERT_EQ(binaryExpression->op, BinaryOp::AddAssignment);
+
+    binaryExpression = ParseAssignmentExpression("a -= b");
+    ASSERT_EQ(binaryExpression->op, BinaryOp::SubAssignment);
+
+    binaryExpression = ParseAssignmentExpression("a <<= b");
+    ASSERT_EQ(binaryExpression->op, BinaryOp::ShiftLeftAssignment);
+
+    binaryExpression = ParseAssignmentExpression("a >>= b");
+    ASSERT_EQ(binaryExpression->op, BinaryOp::ShiftRightAssignment);
+
+    binaryExpression = ParseAssignmentExpression("a &= b");
+    ASSERT_EQ(binaryExpression->op, BinaryOp::BitAndAssignment);
+
+    binaryExpression = ParseAssignmentExpression("a ^= b");
+    ASSERT_EQ(binaryExpression->op, BinaryOp::BitXorAssignment);
+
+    binaryExpression = ParseAssignmentExpression("a |= b");
+    ASSERT_EQ(binaryExpression->op, BinaryOp::BitOrAssignment);
+
+    binaryExpression = ParseAssignmentExpression("a = b *= c /= d %= e += f -= g <<= h >>= i &= j ^= k |= l");
+    ASSERT_EQ(binaryExpression->op, BinaryOp::Assignment);
+
+    auto leftOprand = dynamic_cast<AstIdentifierExpression*>(binaryExpression->leftOprand.get());
+    ASSERT_EQ(leftOprand->fullName, "a");
+
+    auto rightOprand = dynamic_cast<AstBinaryExpression*>(binaryExpression->rightOprand.get());
+    ASSERT_EQ(rightOprand->op, BinaryOp::MulAssignment);
+
+    leftOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->leftOprand.get());
+    ASSERT_EQ(leftOprand->fullName, "b");
+
+    rightOprand = dynamic_cast<AstBinaryExpression*>(rightOprand->rightOprand.get());
+    ASSERT_EQ(rightOprand->op, BinaryOp::DivAssignment);
+
+    leftOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->leftOprand.get());
+    ASSERT_EQ(leftOprand->fullName, "c");
+
+    rightOprand = dynamic_cast<AstBinaryExpression*>(rightOprand->rightOprand.get());
+    ASSERT_EQ(rightOprand->op, BinaryOp::ModAssignment);
+
+    leftOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->leftOprand.get());
+    ASSERT_EQ(leftOprand->fullName, "d");
+
+    rightOprand = dynamic_cast<AstBinaryExpression*>(rightOprand->rightOprand.get());
+    ASSERT_EQ(rightOprand->op, BinaryOp::AddAssignment);
+
+    leftOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->leftOprand.get());
+    ASSERT_EQ(leftOprand->fullName, "e");
+
+    rightOprand = dynamic_cast<AstBinaryExpression*>(rightOprand->rightOprand.get());
+    ASSERT_EQ(rightOprand->op, BinaryOp::SubAssignment);
+
+    leftOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->leftOprand.get());
+    ASSERT_EQ(leftOprand->fullName, "f");
+
+    rightOprand = dynamic_cast<AstBinaryExpression*>(rightOprand->rightOprand.get());
+    ASSERT_EQ(rightOprand->op, BinaryOp::ShiftLeftAssignment);
+
+    leftOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->leftOprand.get());
+    ASSERT_EQ(leftOprand->fullName, "g");
+
+    rightOprand = dynamic_cast<AstBinaryExpression*>(rightOprand->rightOprand.get());
+    ASSERT_EQ(rightOprand->op, BinaryOp::ShiftRightAssignment);
+
+    leftOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->leftOprand.get());
+    ASSERT_EQ(leftOprand->fullName, "h");
+
+    rightOprand = dynamic_cast<AstBinaryExpression*>(rightOprand->rightOprand.get());
+    ASSERT_EQ(rightOprand->op, BinaryOp::BitAndAssignment);
+
+    leftOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->leftOprand.get());
+    ASSERT_EQ(leftOprand->fullName, "i");
+
+    rightOprand = dynamic_cast<AstBinaryExpression*>(rightOprand->rightOprand.get());
+    ASSERT_EQ(rightOprand->op, BinaryOp::BitXorAssignment);
+
+    leftOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->leftOprand.get());
+    ASSERT_EQ(leftOprand->fullName, "j");
+
+    rightOprand = dynamic_cast<AstBinaryExpression*>(rightOprand->rightOprand.get());
+    ASSERT_EQ(rightOprand->op, BinaryOp::BitOrAssignment);
+
+    leftOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->leftOprand.get());
+    ASSERT_EQ(leftOprand->fullName, "k");
+
+    auto mostRightOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->rightOprand.get());
+    ASSERT_EQ(mostRightOprand->fullName, "l");
 }
