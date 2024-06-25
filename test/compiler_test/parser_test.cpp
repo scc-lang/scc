@@ -36,6 +36,13 @@ protected:
         return std::unique_ptr<AstBinaryExpression> { dynamic_cast<AstBinaryExpression*>(Parser {}.ParseAssignmentExpression(scope, lexer).release()) };
     }
 
+    std::unique_ptr<AstExpression> ParseExpression(std::string content)
+    {
+        AstScope scope {};
+        Lexer lexer { std::make_shared<std::istringstream>(std::move(content)) };
+        return Parser {}.ParseExpression(scope, lexer);
+    }
+
     AstScope ParseStatement(std::string content)
     {
         AstScope scope {};
@@ -276,4 +283,124 @@ TEST_F(ParserTest, ParseAssignmentExpression)
 
     auto mostRightOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->rightOprand.get());
     ASSERT_EQ(mostRightOprand->fullName, "l");
+}
+
+TEST_F(ParserTest, ParseArithmeticExpression1)
+{
+    auto parse = [this](std::string content) {
+        return std::unique_ptr<AstBinaryExpression> { dynamic_cast<AstBinaryExpression*>(ParseExpression(std::move(content)).release()) };
+    };
+
+    auto binaryExpression = parse("a+b");
+    ASSERT_EQ(binaryExpression->op, BinaryOp::Add);
+
+    binaryExpression = parse("a-b");
+    ASSERT_EQ(binaryExpression->op, BinaryOp::Sub);
+
+    binaryExpression = parse("a*b");
+    ASSERT_EQ(binaryExpression->op, BinaryOp::Mul);
+
+    binaryExpression = parse("a/b");
+    ASSERT_EQ(binaryExpression->op, BinaryOp::Div);
+
+    binaryExpression = parse("a+b-c");
+    ASSERT_EQ(binaryExpression->op, BinaryOp::Sub);
+
+    auto rightOprand = dynamic_cast<AstIdentifierExpression*>(binaryExpression->rightOprand.get());
+    ASSERT_EQ(rightOprand->fullName, "c");
+
+    auto leftOprand = dynamic_cast<AstBinaryExpression*>(binaryExpression->leftOprand.get());
+    ASSERT_EQ(leftOprand->op, BinaryOp::Add);
+
+    rightOprand = dynamic_cast<AstIdentifierExpression*>(leftOprand->rightOprand.get());
+    ASSERT_EQ(rightOprand->fullName, "b");
+
+    auto mostLeftOprand = dynamic_cast<AstIdentifierExpression*>(leftOprand->leftOprand.get());
+    ASSERT_EQ(mostLeftOprand->fullName, "a");
+}
+
+TEST_F(ParserTest, ParseArithmeticExpression2)
+{
+    auto parse = [this](std::string content) {
+        return std::unique_ptr<AstBinaryExpression> { dynamic_cast<AstBinaryExpression*>(ParseExpression(std::move(content)).release()) };
+    };
+
+    auto binaryExpression = parse("a+b*c");
+    ASSERT_EQ(binaryExpression->op, BinaryOp::Add);
+
+    auto leftOprand = dynamic_cast<AstIdentifierExpression*>(binaryExpression->leftOprand.get());
+    ASSERT_EQ(leftOprand->fullName, "a");
+
+    auto rightOprand = dynamic_cast<AstBinaryExpression*>(binaryExpression->rightOprand.get());
+    ASSERT_EQ(rightOprand->op, BinaryOp::Mul);
+
+    leftOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->leftOprand.get());
+    ASSERT_EQ(leftOprand->fullName, "b");
+
+    auto mostRightOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->rightOprand.get());
+    ASSERT_EQ(mostRightOprand->fullName, "c");
+}
+
+TEST_F(ParserTest, ParseArithmeticExpression3)
+{
+    auto parse = [this](std::string content) {
+        return std::unique_ptr<AstBinaryExpression> { dynamic_cast<AstBinaryExpression*>(ParseExpression(std::move(content)).release()) };
+    };
+
+    auto binaryExpression = parse("a+b+c*d-e-f/g/h+i-j");
+    ASSERT_EQ(binaryExpression->op, BinaryOp::Sub);
+
+    auto rightLeafExpression = std::unique_ptr<AstIdentifierExpression> { dynamic_cast<AstIdentifierExpression*>(binaryExpression->rightOprand.release()) };
+    ASSERT_EQ(rightLeafExpression->fullName, "j");
+
+    auto leftBinaryExpression = std::unique_ptr<AstBinaryExpression> { dynamic_cast<AstBinaryExpression*>(binaryExpression->leftOprand.release()) };
+    ASSERT_EQ(leftBinaryExpression->op, BinaryOp::Add);
+
+    rightLeafExpression.reset(dynamic_cast<AstIdentifierExpression*>(leftBinaryExpression->rightOprand.release()));
+    ASSERT_EQ(rightLeafExpression->fullName, "i");
+
+    binaryExpression.reset(dynamic_cast<AstBinaryExpression*>(leftBinaryExpression->leftOprand.release()));
+    ASSERT_EQ(binaryExpression->op, BinaryOp::Sub);
+
+    auto rightBinaryExpression = std::unique_ptr<AstBinaryExpression> { dynamic_cast<AstBinaryExpression*>(binaryExpression->rightOprand.release()) };
+    ASSERT_EQ(rightBinaryExpression->op, BinaryOp::Div);
+
+    rightLeafExpression.reset(dynamic_cast<AstIdentifierExpression*>(rightBinaryExpression->rightOprand.release()));
+    ASSERT_EQ(rightLeafExpression->fullName, "h");
+
+    leftBinaryExpression.reset(dynamic_cast<AstBinaryExpression*>(rightBinaryExpression->leftOprand.release()));
+    ASSERT_EQ(leftBinaryExpression->op, BinaryOp::Div);
+
+    auto leftLeafExpression = std::unique_ptr<AstIdentifierExpression> { dynamic_cast<AstIdentifierExpression*>(leftBinaryExpression->leftOprand.release()) };
+    ASSERT_EQ(leftLeafExpression->fullName, "f");
+
+    rightLeafExpression.reset(dynamic_cast<AstIdentifierExpression*>(leftBinaryExpression->rightOprand.release()));
+    ASSERT_EQ(rightLeafExpression->fullName, "g");
+
+    leftBinaryExpression.reset(dynamic_cast<AstBinaryExpression*>(binaryExpression->leftOprand.release()));
+    ASSERT_EQ(leftBinaryExpression->op, BinaryOp::Sub);
+
+    rightLeafExpression.reset(dynamic_cast<AstIdentifierExpression*>(leftBinaryExpression->rightOprand.release()));
+    ASSERT_EQ(rightLeafExpression->fullName, "e");
+
+    leftBinaryExpression.reset(dynamic_cast<AstBinaryExpression*>(leftBinaryExpression->leftOprand.release()));
+    ASSERT_EQ(leftBinaryExpression->op, BinaryOp::Add);
+
+    rightBinaryExpression.reset(dynamic_cast<AstBinaryExpression*>(leftBinaryExpression->rightOprand.release()));
+    ASSERT_EQ(rightBinaryExpression->op, BinaryOp::Mul);
+
+    rightLeafExpression.reset(dynamic_cast<AstIdentifierExpression*>(rightBinaryExpression->rightOprand.release()));
+    ASSERT_EQ(rightLeafExpression->fullName, "d");
+
+    leftLeafExpression.reset(dynamic_cast<AstIdentifierExpression*>(rightBinaryExpression->leftOprand.release()));
+    ASSERT_EQ(leftLeafExpression->fullName, "c");
+
+    leftBinaryExpression.reset(dynamic_cast<AstBinaryExpression*>(leftBinaryExpression->leftOprand.release()));
+    ASSERT_EQ(leftBinaryExpression->op, BinaryOp::Add);
+
+    rightLeafExpression.reset(dynamic_cast<AstIdentifierExpression*>(leftBinaryExpression->rightOprand.release()));
+    ASSERT_EQ(rightLeafExpression->fullName, "b");
+
+    leftLeafExpression.reset(dynamic_cast<AstIdentifierExpression*>(leftBinaryExpression->leftOprand.release()));
+    ASSERT_EQ(leftLeafExpression->fullName, "a");
 }

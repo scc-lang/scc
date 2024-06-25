@@ -23,6 +23,12 @@ export enum class BinaryOp {
     BitXorAssignment,
     BitOrAssignment,
 
+    Mul,
+    Div,
+    Mod,
+    Add,
+    Sub,
+
     Less,
     LessEqual,
     Greater,

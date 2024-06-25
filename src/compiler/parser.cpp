@@ -158,62 +158,58 @@ export struct Parser {
         auto expression = ParseRelationalExpression(scope, lexer, std::move(preExpression));
         assert(expression);
 
-        while (true) {
-            std::optional<scc::compiler::BinaryOp> op;
-            switch (lexer.PeekToken().type) {
-            case '=':
-                op = BinaryOp::Assignment;
-                break;
-            case TOKEN_MUL_ASSIGNMENT:
-                op = BinaryOp::MulAssignment;
-                break;
-            case TOKEN_DIV_ASSIGNMENT:
-                op = BinaryOp::DivAssignment;
-                break;
-            case TOKEN_MOD_ASSIGNMENT:
-                op = BinaryOp::ModAssignment;
-                break;
-            case TOKEN_ADD_ASSIGNMENT:
-                op = BinaryOp::AddAssignment;
-                break;
-            case TOKEN_SUB_ASSIGNMENT:
-                op = BinaryOp::SubAssignment;
-                break;
-            case TOKEN_SHIFT_LEFT_ASSIGNMENT:
-                op = BinaryOp::ShiftLeftAssignment;
-                break;
-            case TOKEN_SHIFT_RIGHT_ASSIGNMENT:
-                op = BinaryOp::ShiftRightAssignment;
-                break;
-            case TOKEN_BIT_AND_ASSIGNMENT:
-                op = BinaryOp::BitAndAssignment;
-                break;
-            case TOKEN_BIT_XOR_ASSIGNMENT:
-                op = BinaryOp::BitXorAssignment;
-                break;
-            case TOKEN_BIT_OR_ASSIGNMENT:
-                op = BinaryOp::BitOrAssignment;
-                break;
-            }
-            if (op) {
-                lexer.GetToken();
-                auto leftOprand = std::move(expression);
-                auto rightOprand = ParseAssignmentExpression(scope, lexer);
-                auto sourceRange = SourceRange { leftOprand->sourceRange, rightOprand->sourceRange };
-                expression = std::make_unique<AstBinaryExpression>(std::move(sourceRange), std::move(leftOprand), *op, std::move(rightOprand));
-            } else {
-                break;
-            }
+        std::optional<scc::compiler::BinaryOp> op;
+        switch (lexer.PeekToken().type) {
+        case '=':
+            op = BinaryOp::Assignment;
+            break;
+        case TOKEN_MUL_ASSIGNMENT:
+            op = BinaryOp::MulAssignment;
+            break;
+        case TOKEN_DIV_ASSIGNMENT:
+            op = BinaryOp::DivAssignment;
+            break;
+        case TOKEN_MOD_ASSIGNMENT:
+            op = BinaryOp::ModAssignment;
+            break;
+        case TOKEN_ADD_ASSIGNMENT:
+            op = BinaryOp::AddAssignment;
+            break;
+        case TOKEN_SUB_ASSIGNMENT:
+            op = BinaryOp::SubAssignment;
+            break;
+        case TOKEN_SHIFT_LEFT_ASSIGNMENT:
+            op = BinaryOp::ShiftLeftAssignment;
+            break;
+        case TOKEN_SHIFT_RIGHT_ASSIGNMENT:
+            op = BinaryOp::ShiftRightAssignment;
+            break;
+        case TOKEN_BIT_AND_ASSIGNMENT:
+            op = BinaryOp::BitAndAssignment;
+            break;
+        case TOKEN_BIT_XOR_ASSIGNMENT:
+            op = BinaryOp::BitXorAssignment;
+            break;
+        case TOKEN_BIT_OR_ASSIGNMENT:
+            op = BinaryOp::BitOrAssignment;
+            break;
+        }
+        if (op) {
+            lexer.GetToken();
+            auto leftOprand = std::move(expression);
+            auto rightOprand = ParseAssignmentExpression(scope, lexer);
+            auto sourceRange = SourceRange { leftOprand->sourceRange, rightOprand->sourceRange };
+            expression = std::make_unique<AstBinaryExpression>(std::move(sourceRange), std::move(leftOprand), *op, std::move(rightOprand));
         }
         return std::move(expression);
     }
 
     // relational_expression
-    //  : primary_expression
-    //  | relational_expression ['<'|'>'|'<='|'>='] primary_expression
+    //  : additive_expression
+    //  | relational_expression ['<'|'>'|'<='|'>='] additive_expression
     std::unique_ptr<AstExpression> ParseRelationalExpression(AstScope& scope, Lexer& lexer, std::unique_ptr<AstIdentifierExpression> preExpression = nullptr)
     {
-        auto expression = ParsePrimaryExpression(scope, lexer, std::move(preExpression));
+        auto expression = ParseAdditiveExpression(scope, lexer, std::move(preExpression));
         assert(expression);
 
         while (true) {
@@ -230,6 +226,74 @@ export struct Parser {
                 break;
             case TOKEN_GREATER_EQUAL:
                 op = BinaryOp::GreaterEqual;
+                break;
+            }
+            if (op) {
+                lexer.GetToken();
+                auto leftOprand = std::move(expression);
+                auto rightOperand = ParseAdditiveExpression(scope, lexer);
+                auto sourceRange = SourceRange { leftOprand->sourceRange, rightOperand->sourceRange };
+                expression = std::make_unique<AstBinaryExpression>(std::move(sourceRange), std::move(leftOprand), *op, std::move(rightOperand));
+            } else {
+                break;
+            }
+        }
+        return std::move(expression);
+    }
+
+    // additive_expression
+    //  : multiplicative_expression
+    //  | additive_expression '+' multiplicative_expression
+    //  | additive_expression '-' multiplicative_expression
+    std::unique_ptr<AstExpression> ParseAdditiveExpression(AstScope& scope, Lexer& lexer, std::unique_ptr<AstIdentifierExpression> preExpression = nullptr)
+    {
+        auto expression = ParseMultiplicativeExpression(scope, lexer, std::move(preExpression));
+        assert(expression);
+
+        while (true) {
+            std::optional<scc::compiler::BinaryOp> op;
+            switch (lexer.PeekToken().type) {
+            case '+':
+                op = BinaryOp::Add;
+                break;
+            case '-':
+                op = BinaryOp::Sub;
+                break;
+            }
+            if (op) {
+                lexer.GetToken();
+                auto leftOprand = std::move(expression);
+                auto rightOperand = ParseMultiplicativeExpression(scope, lexer);
+                auto sourceRange = SourceRange { leftOprand->sourceRange, rightOperand->sourceRange };
+                expression = std::make_unique<AstBinaryExpression>(std::move(sourceRange), std::move(leftOprand), *op, std::move(rightOperand));
+            } else {
+                break;
+            }
+        }
+        return std::move(expression);
+    }
+
+    // multiplicative_expression
+    //  : primary_expression
+    //  | multiplicative_expression '*' primary_expression
+    //  | multiplicative_expression '/' primary_expression
+    //  | multiplicative_expression '%' primary_expression
+    std::unique_ptr<AstExpression> ParseMultiplicativeExpression(AstScope& scope, Lexer& lexer, std::unique_ptr<AstIdentifierExpression> preExpression = nullptr)
+    {
+        auto expression = ParsePrimaryExpression(scope, lexer, std::move(preExpression));
+        assert(expression);
+
+        while (true) {
+            std::optional<scc::compiler::BinaryOp> op;
+            switch (lexer.PeekToken().type) {
+            case '*':
+                op = BinaryOp::Mul;
+                break;
+            case '/':
+                op = BinaryOp::Div;
+                break;
+            case '%':
+                op = BinaryOp::Mod;
                 break;
             }
             if (op) {

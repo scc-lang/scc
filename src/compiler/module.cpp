@@ -2,6 +2,7 @@ module;
 
 export module scc.compiler;
 export import :ast_binary_expression;
+export import :ast_expression;
 export import :ast_function_call_expression;
 export import :ast_identifier_expression;
 export import :ast_scope;
