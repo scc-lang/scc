@@ -43,6 +43,7 @@ export struct Parser {
     //  : /* empty statement */ ';'
     //  : declaration_or_expression_statement
     //  | for_loop_statement
+    //  | if_statement
     void ParseStatement(AstScope& scope, Lexer& lexer)
     {
         const auto& token = lexer.PeekToken();
@@ -64,6 +65,10 @@ export struct Parser {
 
         case TOKEN_FOR:
             ParseForStatement(scope, lexer);
+            break;
+
+        case TOKEN_IF:
+            ParseIfStatement(scope, lexer);
             break;
 
         default:
@@ -176,11 +181,11 @@ export struct Parser {
     }
 
     // assignment_expression
-    //  : relational_expression
+    //  : equality_expression
     //  | primary_expression ['='|'*='|'/='|'%='|'+='|'-='|'<<='|'>>='|'&='|'^='|'|='] assignment_expression
     std::unique_ptr<AstExpression> ParseAssignmentExpression(AstScope& scope, Lexer& lexer, std::unique_ptr<AstIdentifierExpression> preExpression = nullptr)
     {
-        auto expression = ParseRelationalExpression(scope, lexer, std::move(preExpression));
+        auto expression = ParseEqualityExpression(scope, lexer, std::move(preExpression));
         assert(expression);
 
         std::optional<scc::compiler::BinaryOp> op;
@@ -225,6 +230,38 @@ export struct Parser {
             auto rightOprand = ParseAssignmentExpression(scope, lexer);
             auto sourceRange = SourceRange { leftOprand->sourceRange, rightOprand->sourceRange };
             expression = std::make_unique<AstBinaryExpression>(std::move(sourceRange), std::move(leftOprand), *op, std::move(rightOprand));
+        }
+        return std::move(expression);
+    }
+
+    // equality_expression
+    //  : relational_expression
+    //  | equality_expression '==' relational_expression
+    //  | equality_expression '!=' relational_expression
+    std::unique_ptr<AstExpression> ParseEqualityExpression(AstScope& scope, Lexer& lexer, std::unique_ptr<AstIdentifierExpression> preExpression = nullptr)
+    {
+        auto expression = ParseRelationalExpression(scope, lexer, std::move(preExpression));
+        assert(expression);
+
+        while (true) {
+            std::optional<scc::compiler::BinaryOp> op;
+            switch (lexer.PeekToken().type) {
+            case TOKEN_EQUAL:
+                op = BinaryOp::Equal;
+                break;
+            case TOKEN_NOT_EQUAL:
+                op = BinaryOp::NotEqual;
+                break;
+            }
+            if (op) {
+                lexer.GetToken();
+                auto leftOprand = std::move(expression);
+                auto rightOperand = ParseRelationalExpression(scope, lexer);
+                auto sourceRange = SourceRange { leftOprand->sourceRange, rightOperand->sourceRange };
+                expression = std::make_unique<AstBinaryExpression>(std::move(sourceRange), std::move(leftOprand), *op, std::move(rightOperand));
+            } else {
+                break;
+            }
         }
         return std::move(expression);
     }
@@ -448,6 +485,43 @@ export struct Parser {
         // Finish for statement parsing, add to parent scope.
         scope.statements.push_back(std::make_unique<AstForLoopStatement>(
             SourceRange { startToken.sourceRange, lastToken.sourceRange }, std::move(forInitScope), std::move(conditionalExpression), std::move(iterationExpression), std::move(forBodyScope)));
+    }
+
+    // if_statement
+    //  : TOKEN_IF '(' expression ')' '{' statements* '}'
+    //  | TOKEN_IF '(' expression ')' '{' statements* '}' ELSE '{' statements* '}'
+    //  : TOKEN_IF '(' expression ')' '{' statements* '}' TOKEN_ELSE if_statement
+    void ParseIfStatement(AstScope& scope, Lexer& lexer)
+    {
+        auto startSourceRange = lexer.GetRequiredToken(TOKEN_IF).sourceRange;
+
+        lexer.GetRequiredToken('(');
+        auto conditionalExpression = ParseExpression(scope, lexer);
+        lexer.GetRequiredToken(')');
+
+        auto trueScope = AstScope { &scope };
+        lexer.GetRequiredToken('{');
+        while (lexer.PeekToken().type != '}') {
+            ParseStatement(trueScope, lexer);
+        }
+        auto lastSourceRange = lexer.GetRequiredToken('}').sourceRange;
+
+        auto falseScope = AstScope { &scope };
+        if (lexer.PeekToken().type == TOKEN_ELSE) {
+            lexer.GetToken();
+            if (lexer.PeekToken().type == TOKEN_IF) {
+                ParseIfStatement(falseScope, lexer);
+                lastSourceRange = falseScope.statements.back()->sourceRange;
+            } else {
+                lexer.GetRequiredToken('{');
+                while (lexer.PeekToken().type != '}') {
+                    ParseStatement(falseScope, lexer);
+                }
+                lastSourceRange = lexer.GetRequiredToken('}').sourceRange;
+            }
+        }
+
+        scope.statements.push_back(std::make_unique<AstConditionalStatement>(SourceRange { startSourceRange, lastSourceRange }, std::move(conditionalExpression), std::move(trueScope), std::move(falseScope)));
     }
 
     // integer_literal_expression

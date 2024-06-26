@@ -190,6 +190,23 @@ private:
                     }
 
                 case '=':
+                    GetChar();
+                    if (PeekChar() == '=') {
+                        GetChar();
+                        return Token { TOKEN_EQUAL, m_line, m_column - 2, m_column - 1 };
+                    } else {
+                        return Token { ch, m_line, m_column - 1 };
+                    }
+
+                case '!':
+                    GetChar();
+                    if (PeekChar() == '=') {
+                        GetChar();
+                        return Token { TOKEN_NOT_EQUAL, m_line, m_column - 2, m_column - 1 };
+                    } else {
+                        return Token { ch, m_line, m_column - 1 };
+                    }
+
                 case '(':
                 case ')':
                 case '{':
@@ -227,6 +244,10 @@ private:
 
         if (str == "for") {
             return Token { TOKEN_FOR, startLine, startColumn, m_column - 1 };
+        } else if (str == "if") {
+            return Token { TOKEN_IF, startLine, startColumn, m_column - 1 };
+        } else if (str == "else") {
+            return Token { TOKEN_ELSE, startLine, startColumn, m_column - 1 };
         } else {
             return Token { TOKEN_IDENTIFIER, startLine, startColumn, m_line, m_column - 1, std::move(str) };
         }
