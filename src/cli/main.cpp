@@ -110,10 +110,12 @@ void CompileAndRun(const Options& options)
         auto stdModulePath = appPath / "std";
         auto stdLibPath = stdModulePath / "libscc.std.a";
         auto exePath = workingFolder / "a.out";
-        std::system(std::format("clang++-18 -std=c++20 -fprebuilt-module-path={} -w {} {} -o {}", stdModulePath.string(), outFile.string(), stdLibPath.string(), exePath.string()).c_str());
+        auto res = std::system(std::format("clang++-18 -std=c++20 -fprebuilt-module-path={} -w {} {} -o {}", stdModulePath.string(), outFile.string(), stdLibPath.string(), exePath.string()).c_str());
 
         // Run.
-        std::system(exePath.string().c_str());
+        if (!res) {
+            std::system(exePath.string().c_str());
+        }
     }
 }
 

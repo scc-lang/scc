@@ -67,7 +67,12 @@ export struct Token final {
         return *std::any_cast<std::string>(&value);
     }
 
-    uint64_t integer()
+    const std::string& string() const
+    {
+        return *std::any_cast<std::string>(&value);
+    }
+
+    uint64_t integer() const
     {
         return *std::any_cast<uint64_t>(&value);
     }
