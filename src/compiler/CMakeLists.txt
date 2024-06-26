@@ -14,6 +14,7 @@ target_sources(scc.compiler PUBLIC FILE_SET CXX_MODULES FILES
     ast_statement.cpp
     ast_string_literal_expression.cpp
     ast_type_info.cpp
+    ast_unary_expression.cpp
     ast_variable_declaration.cpp
     ast_variable_definition_statement.cpp
     ast_visitor.cpp

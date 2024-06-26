@@ -57,3 +57,8 @@ TEST_F(MainTest, HelloWorld)
 {
     RunTest("hello_world");
 }
+
+TEST_F(MainTest, FahrenheitCelsiusTable)
+{
+    RunTest("fahrenheit_celsius_table");
+}
