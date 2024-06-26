@@ -1,3 +1,14 @@
+// style 1
+std::println("Style 1:");
+for (int fahr, celsius, lower, upper = 300, step = 20; fahr <= upper; fahr += step) {
+    celsius = 5 * (fahr - 32) / 9;
+    std::println("{}\t{}", fahr, celsius);
+}
+
+std::println();
+
+// style 2
+std::println("Style 2:");
 for (int fahr, int celsius, int lower, int upper = 300, int step = 20; fahr <= upper; fahr += step) {
     celsius = 5 * (fahr - 32) / 9;
     std::println("{}\t{}", fahr, celsius);

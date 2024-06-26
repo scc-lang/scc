@@ -91,6 +91,7 @@ export struct Parser {
 
     // variable_declaration_statement
     //  : (variable_declaration ',')* variable_declaration ';'
+    //  : variable_declaration (',' IDENTIFIER ('=' expression)?)*
     void ParseVariableDeclarationStatement(AstScope& scope, Lexer& lexer, std::unique_ptr<AstIdentifierExpression> typeIdentifierExpression)
     {
         assert(typeIdentifierExpression);
@@ -99,14 +100,21 @@ export struct Parser {
 
         while (lexer.PeekToken().type == ',') {
             lexer.GetToken();
-            ParseVariableDeclaration(scope, lexer);
+
+            if (lexer.PeekToken().type == TOKEN_IDENTIFIER && !scope.QueryTypeInfo(lexer.PeekToken().string())) {
+                // The next token is identifier but not a type name, treat it as a variable with the same type.
+                ParseVariableDeclarationWithType(scope, lexer, scope.variableDeclarations.back()->typeInfo);
+            } else {
+                // For all other cases, treat as a new variable declaration.
+                ParseVariableDeclaration(scope, lexer);
+            }
         }
 
         lexer.GetRequiredToken(';');
     }
 
     // variable_declaration
-    //  : type_idenitifer IDENTIFIER ('=' expression)
+    //  : type_idenitifer IDENTIFIER ('=' expression)?
     void ParseVariableDeclaration(AstScope& scope, Lexer& lexer, std::unique_ptr<AstIdentifierExpression> typeIdentifierExpression = nullptr)
     {
         if (!typeIdentifierExpression) {
@@ -115,14 +123,18 @@ export struct Parser {
 
         assert(typeIdentifierExpression);
 
-        auto sourceRange = typeIdentifierExpression->sourceRange;
-
         auto type = scope.QueryTypeInfo(typeIdentifierExpression->fullName);
         if (!type) {
             throw Exception { typeIdentifierExpression->sourceRange, "Undefined type '{}'", typeIdentifierExpression->fullName };
         }
 
+        ParseVariableDeclarationWithType(scope, lexer, *type);
+    }
+
+    void ParseVariableDeclarationWithType(AstScope& scope, Lexer& lexer, AstTypeInfo& type)
+    {
         auto identifier = lexer.GetRequiredToken(TOKEN_IDENTIFIER);
+        auto sourceRange = identifier.sourceRange;
 
         auto initExpression = std::unique_ptr<AstExpression> {};
         if (lexer.PeekToken().type == '=') {
@@ -135,7 +147,7 @@ export struct Parser {
             sourceRange.endColumn = identifier.sourceRange.endColumn;
         }
 
-        scope.variableDeclarations.push_back(std::make_unique<AstVariableDeclaration>(sourceRange, *type, std::move(identifier.string()), std::move(initExpression)));
+        scope.variableDeclarations.push_back(std::make_unique<AstVariableDeclaration>(sourceRange, type, std::move(identifier.string()), std::move(initExpression)));
         scope.statements.push_back(std::make_unique<AstVariableDefinitionStatement>(std::move(sourceRange), *scope.variableDeclarations.back()));
     }
 

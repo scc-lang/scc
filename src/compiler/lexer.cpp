@@ -33,7 +33,11 @@ export struct Lexer final {
     {
         auto token = GetToken();
         if (token.type != tokenType) {
-            throw Exception(token.sourceRange, "expected '{}'", (TokenType)tokenType);
+            if (tokenType == TOKEN_IDENTIFIER) {
+                throw Exception(token.sourceRange, "expected unqualified-id");
+            } else {
+                throw Exception(token.sourceRange, "expected '{}'", (TokenType)tokenType);
+            }
         }
         return std::move(token);
     }
@@ -124,6 +128,9 @@ private:
                     if (PeekChar() == '=') {
                         GetChar();
                         return Token { TOKEN_DIV_ASSIGNMENT, m_line, m_column - 2, m_column - 1 };
+                    } else if (PeekChar() == '/') {
+                        ReadSingleLineComment();
+                        continue;
                     } else {
                         return Token { ch, m_line, m_column - 1 };
                     }
@@ -202,7 +209,7 @@ private:
 
     void ReadSingleLineComment()
     {
-        assert(PeekChar() == '#');
+        assert(PeekChar() == '#' || PeekChar() == '/');
         for (auto ch = GetChar(); ch != TOKEN_EOF && ch != '\n'; ch = GetChar())
             ;
     }
