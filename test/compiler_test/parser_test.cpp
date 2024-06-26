@@ -475,3 +475,69 @@ for (int a, int b = 10; a < b; a += 2) {
     ASSERT_NE(functionCallExpression, nullptr);
     ASSERT_EQ(dynamic_cast<AstIdentifierExpression*>(functionCallExpression->funcExpression.get())->fullName, "foo");
 }
+
+TEST_F(ParserTest, ParseIfStatement)
+{
+    auto scope = ParseStatement("if (a) {}");
+    ASSERT_EQ(scope.statements.size(), 1);
+
+    auto ifStatement = dynamic_cast<AstConditionalStatement*>(scope.statements[0].get());
+    ASSERT_EQ(dynamic_cast<AstIdentifierExpression*>(ifStatement->conditionalExpression.get())->fullName, "a");
+    ASSERT_EQ(ifStatement->trueScope.statements.size(), 0);
+    ASSERT_EQ(ifStatement->trueScope.variableDeclarations.size(), 0);
+    ASSERT_EQ(ifStatement->falseScope.statements.size(), 0);
+    ASSERT_EQ(ifStatement->falseScope.variableDeclarations.size(), 0);
+
+    scope = ParseStatement("if (a) {a + b; a * b;}");
+    ASSERT_EQ(scope.statements.size(), 1);
+
+    ifStatement = dynamic_cast<AstConditionalStatement*>(scope.statements[0].get());
+    ASSERT_EQ(ifStatement->trueScope.statements.size(), 2);
+    ASSERT_EQ(ifStatement->trueScope.variableDeclarations.size(), 0);
+    ASSERT_EQ(ifStatement->falseScope.statements.size(), 0);
+    ASSERT_EQ(ifStatement->falseScope.variableDeclarations.size(), 0);
+
+    auto binaryExpression = dynamic_cast<AstBinaryExpression*>(dynamic_cast<AstExpressionStatement*>(ifStatement->trueScope.statements[0].get())->expression.get());
+    ASSERT_EQ(binaryExpression->op, BinaryOp::Add);
+    binaryExpression = dynamic_cast<AstBinaryExpression*>(dynamic_cast<AstExpressionStatement*>(ifStatement->trueScope.statements[1].get())->expression.get());
+    ASSERT_EQ(binaryExpression->op, BinaryOp::Mul);
+
+    scope = ParseStatement("if (a) {a + b; a * b;} else {c - d; c / d;}");
+    ASSERT_EQ(scope.statements.size(), 1);
+
+    ifStatement = dynamic_cast<AstConditionalStatement*>(scope.statements[0].get());
+    ASSERT_EQ(ifStatement->trueScope.statements.size(), 2);
+    ASSERT_EQ(ifStatement->trueScope.variableDeclarations.size(), 0);
+    ASSERT_EQ(ifStatement->falseScope.statements.size(), 2);
+    ASSERT_EQ(ifStatement->falseScope.variableDeclarations.size(), 0);
+
+    binaryExpression = dynamic_cast<AstBinaryExpression*>(dynamic_cast<AstExpressionStatement*>(ifStatement->trueScope.statements[0].get())->expression.get());
+    ASSERT_EQ(binaryExpression->op, BinaryOp::Add);
+    binaryExpression = dynamic_cast<AstBinaryExpression*>(dynamic_cast<AstExpressionStatement*>(ifStatement->trueScope.statements[1].get())->expression.get());
+    ASSERT_EQ(binaryExpression->op, BinaryOp::Mul);
+
+    binaryExpression = dynamic_cast<AstBinaryExpression*>(dynamic_cast<AstExpressionStatement*>(ifStatement->falseScope.statements[0].get())->expression.get());
+    ASSERT_EQ(binaryExpression->op, BinaryOp::Sub);
+    binaryExpression = dynamic_cast<AstBinaryExpression*>(dynamic_cast<AstExpressionStatement*>(ifStatement->falseScope.statements[1].get())->expression.get());
+    ASSERT_EQ(binaryExpression->op, BinaryOp::Div);
+
+    scope = ParseStatement("if (a) {a + b; a * b;} else if (a) {c - d; c / d;}");
+    ASSERT_EQ(scope.statements.size(), 1);
+
+    ifStatement = dynamic_cast<AstConditionalStatement*>(scope.statements[0].get());
+    ASSERT_EQ(ifStatement->trueScope.statements.size(), 2);
+    ASSERT_EQ(ifStatement->trueScope.variableDeclarations.size(), 0);
+    ASSERT_EQ(ifStatement->falseScope.statements.size(), 1);
+    ASSERT_EQ(ifStatement->falseScope.variableDeclarations.size(), 0);
+
+    binaryExpression = dynamic_cast<AstBinaryExpression*>(dynamic_cast<AstExpressionStatement*>(ifStatement->trueScope.statements[0].get())->expression.get());
+    ASSERT_EQ(binaryExpression->op, BinaryOp::Add);
+    binaryExpression = dynamic_cast<AstBinaryExpression*>(dynamic_cast<AstExpressionStatement*>(ifStatement->trueScope.statements[1].get())->expression.get());
+    ASSERT_EQ(binaryExpression->op, BinaryOp::Mul);
+
+    ifStatement = dynamic_cast<AstConditionalStatement*>(ifStatement->falseScope.statements[0].get());
+    ASSERT_EQ(ifStatement->trueScope.statements.size(), 2);
+    ASSERT_EQ(ifStatement->trueScope.variableDeclarations.size(), 0);
+    ASSERT_EQ(ifStatement->falseScope.statements.size(), 0);
+    ASSERT_EQ(ifStatement->falseScope.variableDeclarations.size(), 0);
+}

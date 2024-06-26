@@ -29,6 +29,8 @@ export enum class BinaryOp {
     Add,
     Sub,
 
+    Equal,
+    NotEqual,
     Less,
     LessEqual,
     Greater,
