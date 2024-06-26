@@ -14,6 +14,7 @@ export struct AstIdentifierExpression;
 export struct AstIntegerLiteralExpression;
 export struct AstScope;
 export struct AstStringLiteralExpression;
+export struct AstUnaryExpression;
 export struct AstVariableDeclaration;
 export struct AstVariableDefinitionStatement;
 
@@ -30,6 +31,7 @@ export struct AstVisitor {
     virtual void VisitAstIntegerLiteralExpression(const AstIntegerLiteralExpression& integerLiteralExpression) = 0;
     virtual void VisitAstScope(const AstScope& scope) = 0;
     virtual void VisitAstStringLiteralExpression(const AstStringLiteralExpression& stringLiteralExpression) = 0;
+    virtual void VisitAstUnaryExpression(const AstUnaryExpression& unaryExpression) = 0;
     virtual void VisitAstVariableDeclaration(const AstVariableDeclaration& variableDeclaration) = 0;
     virtual void VisitAstVariableDefinitionStatement(const AstVariableDefinitionStatement& variableDefinitionStatemet) = 0;
 };

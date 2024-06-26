@@ -19,6 +19,7 @@ import :ast_string_literal_expression;
 import :ast_scope;
 import :ast_statement;
 import :ast_type_info;
+import :ast_unary_expression;
 import :ast_variable_declaration;
 import :ast_variable_definition_statement;
 import :exception;
@@ -339,7 +340,7 @@ export struct Parser {
             lexer.GetRequiredToken('(');
             auto expression = ParseExpression(scope, lexer);
             lexer.GetRequiredToken(')');
-            return std::move(expression);
+            return std::make_unique<AstUnaryExpression>(expression->sourceRange, UnaryOp::Bracket, std::move(expression));
         } else {
             return ParseFunctionCallExpression(scope, lexer);
         }

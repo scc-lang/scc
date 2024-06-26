@@ -12,6 +12,7 @@ export import :ast_identifier_expression;
 export import :ast_integer_literal_expression;
 export import :ast_scope;
 export import :ast_string_literal_expression;
+export import :ast_unary_expression;
 export import :ast_variable_declaration;
 export import :ast_variable_definition_statement;
 export import :exception;

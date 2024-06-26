@@ -15,6 +15,7 @@ import :ast_integer_literal_expression;
 import :ast_scope;
 import :ast_statement;
 import :ast_string_literal_expression;
+import :ast_unary_expression;
 import :ast_variable_declaration;
 import :ast_variable_definition_statement;
 import :ast_visitor;
@@ -216,6 +217,16 @@ export struct Translator final : AstVisitor {
             }
         }
         m_printer.Print("\"");
+    }
+
+    void VisitAstUnaryExpression(const AstUnaryExpression& unaryExpression) override
+    {
+        m_printer.Print("(");
+
+        assert(unaryExpression.oprand);
+        unaryExpression.oprand->Visit(*this);
+
+        m_printer.Print(")");
     }
 
     void VisitAstVariableDeclaration(const AstVariableDeclaration& variableDeclaration) override

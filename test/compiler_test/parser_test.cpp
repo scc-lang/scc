@@ -414,13 +414,16 @@ TEST_F(ParserTest, ParseArithmeticExpression4)
     auto binaryExpression = parse("(a+b)*c");
     ASSERT_EQ(binaryExpression->op, BinaryOp::Mul);
 
-    auto LeftBinaryExpression = dynamic_cast<AstBinaryExpression*>(binaryExpression->leftOprand.get());
-    ASSERT_EQ(LeftBinaryExpression->op, BinaryOp::Add);
+    auto leftUnaryExpression = dynamic_cast<AstUnaryExpression*>(binaryExpression->leftOprand.get());
+    ASSERT_EQ(leftUnaryExpression->op, UnaryOp::Bracket);
 
-    auto rightLeafExpression = dynamic_cast<AstIdentifierExpression*>(LeftBinaryExpression->rightOprand.get());
+    auto leftBinaryExpression = dynamic_cast<AstBinaryExpression*>(leftUnaryExpression->oprand.get());
+    ASSERT_EQ(leftBinaryExpression->op, BinaryOp::Add);
+
+    auto rightLeafExpression = dynamic_cast<AstIdentifierExpression*>(leftBinaryExpression->rightOprand.get());
     ASSERT_EQ(rightLeafExpression->fullName, "b");
 
-    auto leftLeafExpression = dynamic_cast<AstIdentifierExpression*>(LeftBinaryExpression->leftOprand.get());
+    auto leftLeafExpression = dynamic_cast<AstIdentifierExpression*>(leftBinaryExpression->leftOprand.get());
     ASSERT_EQ(leftLeafExpression->fullName, "a");
 
     rightLeafExpression = dynamic_cast<AstIdentifierExpression*>(binaryExpression->rightOprand.get());
