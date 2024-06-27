@@ -1,0 +1,76 @@
+name: Build and deploy
+
+on: 
+  push:
+    branches:
+    - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "build-and-deploy"
+  cancel-in-progress: false
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/scc-lang/scc/build:latest@sha256:4b165b2fe28938f884814978a543e46ff744a022f200f7b1b09ba8839f982545
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Generate build files
+      run: |
+        mkdir build
+        cd build
+        CXX=clang++-18 cmake .. -G Ninja
+
+    - name: Build
+      run: |
+        cd build
+        ninja
+
+    - name: Test
+      run: |
+        cd build
+        ctest --test-dir test
+
+  build_web_site:
+    runs-on: ubuntu-latest
+    needs: build_and_test
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: "20"
+
+    - name: Build
+      run: |
+        cd website
+        npm i
+        npm run build
+
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: website/dist
+
+  deploy_web_site:
+    runs-on: ubuntu-latest
+    needs: build_web_site
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+    - name: Deploy
+      id: deployment
+      uses: actions/deploy-pages@v4
