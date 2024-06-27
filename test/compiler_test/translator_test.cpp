@@ -3,8 +3,10 @@
 #include <filesystem>
 #include <sstream>
 
+import scc.ast;
 import scc.compiler;
 
+using namespace scc::ast;
 using namespace scc::compiler;
 
 class TranslatorTest : public testing::Test {

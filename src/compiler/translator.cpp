@@ -4,24 +4,14 @@ module;
 #include <memory>
 #include <ostream>
 
+import scc.ast;
+
 export module scc.compiler:translator;
-import :ast_binary_expression;
-import :ast_conditional_statement;
-import :ast_expression_statement;
-import :ast_for_loop_statement;
-import :ast_function_call_expression;
-import :ast_identifier_expression;
-import :ast_integer_literal_expression;
-import :ast_scope;
-import :ast_statement;
-import :ast_string_literal_expression;
-import :ast_unary_expression;
-import :ast_variable_declaration;
-import :ast_variable_definition_statement;
-import :ast_visitor;
 import :printer;
 
 namespace scc::compiler {
+
+using namespace ast;
 
 export struct Translator final : AstVisitor {
     Translator(std::shared_ptr<std::ostream> out)

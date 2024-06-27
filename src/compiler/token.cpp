@@ -6,10 +6,13 @@ module;
 #include <format>
 #include <string>
 
+import scc.ast;
+
 export module scc.compiler:token;
-import :source_range;
 
 namespace scc::compiler {
+
+using ast::SourceRange;
 
 export enum TokenType {
     TOKEN_EOF = -1,

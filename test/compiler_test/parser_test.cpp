@@ -1,8 +1,10 @@
 #include "test/test.h"
 #include <memory>
 
+import scc.ast;
 import scc.compiler;
 
+using namespace scc::ast;
 using namespace scc::compiler;
 
 class ParserTest : public testing::Test {

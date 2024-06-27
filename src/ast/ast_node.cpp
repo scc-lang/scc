@@ -2,10 +2,10 @@ module;
 
 #include <utility>
 
-export module scc.compiler:ast_node;
+export module scc.ast:ast_node;
 import :source_range;
 
-namespace scc::compiler {
+namespace scc::ast {
 
 export struct AstVisitor;
 

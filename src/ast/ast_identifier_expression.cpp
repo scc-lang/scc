@@ -2,12 +2,12 @@ module;
 
 #include <string>
 
-export module scc.compiler:ast_identifier_expression;
+export module scc.ast:ast_identifier_expression;
 import :ast_expression;
 import :ast_visitor;
 import :source_range;
 
-namespace scc::compiler {
+namespace scc::ast {
 
 export struct AstIdentifierExpression : AstExpression {
     std::string fullName {};
@@ -18,7 +18,8 @@ export struct AstIdentifierExpression : AstExpression {
     {
     }
 
-    void Visit(AstVisitor& visitor) override {
+    void Visit(AstVisitor& visitor) override
+    {
         visitor.VisitAstIdentifierExpression(*this);
     }
 };

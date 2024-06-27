@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <unistd.h>
 
+import scc.ast;
 import scc.cli;
 import scc.compiler;
 
@@ -18,7 +19,7 @@ struct Options {
 
 void PrintHelp(const std::string_view& optionsHelp);
 void CompileAndRun(const Options& options);
-scc::compiler::AstScope Parse(const std::string& file);
+scc::ast::AstScope Parse(const std::string& file);
 std::string GetFileLine(const std::string& file, int line);
 bool IsErrorColorSupported();
 
@@ -119,9 +120,9 @@ void CompileAndRun(const Options& options)
     }
 }
 
-scc::compiler::AstScope Parse(const std::string& file)
+scc::ast::AstScope Parse(const std::string& file)
 {
-    scc::compiler::AstScope scope {};
+    scc::ast::AstScope scope {};
     scc::compiler::Lexer lexer { std::make_shared<std::ifstream>(file) };
     scc::compiler::Parser {}.ParseCompileUnit(scope, lexer);
     return std::move(scope);

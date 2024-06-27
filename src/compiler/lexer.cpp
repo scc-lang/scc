@@ -5,6 +5,8 @@ module;
 #include <memory>
 #include <queue>
 
+import scc.ast;
+
 export module scc.compiler:lexer;
 import :exception;
 import :token;

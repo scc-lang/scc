@@ -2,14 +2,14 @@ module;
 
 #include <memory>
 
-export module scc.compiler:ast_for_loop_statement;
+export module scc.ast:ast_for_loop_statement;
 import :ast_expression;
 import :ast_scope;
 import :ast_statement;
 import :ast_visitor;
 import :source_range;
 
-namespace scc::compiler {
+namespace scc::ast {
 
 export struct AstForLoopStatement final : AstStatement {
     AstScope initScope {};

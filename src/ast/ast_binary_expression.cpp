@@ -3,12 +3,12 @@ module;
 #include <cassert>
 #include <memory>
 
-export module scc.compiler:ast_binary_expression;
+export module scc.ast:ast_binary_expression;
 import :ast_expression;
 import :ast_visitor;
 import :source_range;
 
-namespace scc::compiler {
+namespace scc::ast {
 
 export enum class BinaryOp {
     Assignment,

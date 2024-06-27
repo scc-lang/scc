@@ -1,8 +1,8 @@
 module;
 
-export module scc.compiler:ast_visitor;
+export module scc.ast:ast_visitor;
 
-namespace scc::compiler {
+namespace scc::ast {
 
 export struct AstBinaryExpression;
 export struct AstBreakStatement;

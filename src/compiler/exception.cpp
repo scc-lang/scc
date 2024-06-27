@@ -3,10 +3,13 @@ module;
 #include <format>
 #include <stdexcept>
 
+import scc.ast;
+
 export module scc.compiler:exception;
-import :source_range;
 
 namespace scc::compiler {
+
+using ast::SourceRange;
 
 export struct Exception : std::runtime_error {
     int startLine {};

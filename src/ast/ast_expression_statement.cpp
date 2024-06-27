@@ -2,13 +2,13 @@ module;
 
 #include <memory>
 
-export module scc.compiler:ast_expression_statement;
+export module scc.ast:ast_expression_statement;
 import :ast_expression;
 import :ast_statement;
 import :ast_visitor;
 import :source_range;
 
-namespace scc::compiler {
+namespace scc::ast {
 
 export struct AstExpressionStatement final : AstStatement {
     std::unique_ptr<AstExpression> expression {};

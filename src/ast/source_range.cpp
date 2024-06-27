@@ -1,8 +1,8 @@
 module;
 
-export module scc.compiler:source_range;
+export module scc.ast:source_range;
 
-namespace scc::compiler {
+namespace scc::ast {
 
 export struct SourceRange {
     int startLine {};

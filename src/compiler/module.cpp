@@ -1,20 +1,6 @@
 module;
 
 export module scc.compiler;
-export import :ast_binary_expression;
-export import :ast_break_statement;
-export import :ast_conditional_statement;
-export import :ast_expression_statement;
-export import :ast_expression;
-export import :ast_for_loop_statement;
-export import :ast_function_call_expression;
-export import :ast_identifier_expression;
-export import :ast_integer_literal_expression;
-export import :ast_scope;
-export import :ast_string_literal_expression;
-export import :ast_unary_expression;
-export import :ast_variable_declaration;
-export import :ast_variable_definition_statement;
 export import :exception;
 export import :lexer;
 export import :parser;

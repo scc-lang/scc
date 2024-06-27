@@ -4,12 +4,12 @@ module;
 #include <unordered_map>
 #include <vector>
 
-export module scc.compiler:ast_scope;
+export module scc.ast:ast_scope;
 import :ast_type_info;
 import :ast_statement;
 import :ast_variable_declaration;
 
-namespace scc::compiler {
+namespace scc::ast {
 
 export struct AstScope final {
     std::vector<std::unique_ptr<AstStatement>> statements {};
