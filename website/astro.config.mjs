@@ -8,8 +8,6 @@ export default defineConfig({
 			social: {
 				github: 'https://github.com/scc-lang/scc',
 			},
-			sidebar: [
-			],
 		}),
 	],
 });

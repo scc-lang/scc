@@ -57,6 +57,71 @@ TEST_F(LexerTest, ParseSingleComment)
     ASSERT_EQ(token.sourceRange.startColumn, 13);
     ASSERT_EQ(token.sourceRange.endLine, 2);
     ASSERT_EQ(token.sourceRange.endColumn, 13);
+
+    lexer = CreateLexer(R"(  # this is a comments.
+int a;
+
+# this is another comments.
+int b;
+)");
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_IDENTIFIER);
+    ASSERT_EQ(token.string(), "int");
+    ASSERT_EQ(token.sourceRange.startLine, 2);
+    ASSERT_EQ(token.sourceRange.startColumn, 1);
+    ASSERT_EQ(token.sourceRange.endLine, 2);
+    ASSERT_EQ(token.sourceRange.endColumn, 3);
+    lexer.GetToken();
+    ASSERT_EQ(lexer.GetToken().type, ';');
+
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_IDENTIFIER);
+    ASSERT_EQ(token.string(), "int");
+    ASSERT_EQ(token.sourceRange.startLine, 5);
+    ASSERT_EQ(token.sourceRange.startColumn, 1);
+    ASSERT_EQ(token.sourceRange.endLine, 5);
+    ASSERT_EQ(token.sourceRange.endColumn, 3);
+
+    lexer = CreateLexer("  #! should be allowed");
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_EOF);
+    ASSERT_EQ(token.sourceRange.startLine, 1);
+    ASSERT_EQ(token.sourceRange.startColumn, 23);
+    ASSERT_EQ(token.sourceRange.endLine, 1);
+    ASSERT_EQ(token.sourceRange.endColumn, 23);
+
+    lexer = CreateLexer("#!should be allowed");
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_EOF);
+    ASSERT_EQ(token.sourceRange.startLine, 1);
+    ASSERT_EQ(token.sourceRange.startColumn, 20);
+    ASSERT_EQ(token.sourceRange.endLine, 1);
+    ASSERT_EQ(token.sourceRange.endColumn, 20);
+
+    lexer = CreateLexer("#\r\n");
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_EOF);
+    ASSERT_EQ(token.sourceRange.startLine, 2);
+    ASSERT_EQ(token.sourceRange.startColumn, 1);
+    ASSERT_EQ(token.sourceRange.endLine, 2);
+    ASSERT_EQ(token.sourceRange.endColumn, 1);
+
+    lexer = CreateLexer("#\n");
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_EOF);
+    ASSERT_EQ(token.sourceRange.startLine, 2);
+    ASSERT_EQ(token.sourceRange.startColumn, 1);
+    ASSERT_EQ(token.sourceRange.endLine, 2);
+    ASSERT_EQ(token.sourceRange.endColumn, 1);
+
+    lexer = CreateLexer("#include");
+    ASSERT_THROW_COMPILER_EXCEPTION(lexer.GetToken(), (Exception { 1, 2, 2, "'#' comment must be followed by a whitespace character" }));
+
+    lexer = CreateLexer("#if");
+    ASSERT_THROW_COMPILER_EXCEPTION(lexer.GetToken(), (Exception { 1, 2, 2, "'#' comment must be followed by a whitespace character" }));
+
+    lexer = CreateLexer("#define");
+    ASSERT_THROW_COMPILER_EXCEPTION(lexer.GetToken(), (Exception { 1, 2, 2, "'#' comment must be followed by a whitespace character" }));
 }
 
 TEST_F(LexerTest, ParseIdentifier)
@@ -403,7 +468,7 @@ TEST_F(LexerTest, ParseAssignmentOperator)
     ASSERT_EQ(token.sourceRange.startColumn, 2);
     ASSERT_EQ(token.sourceRange.endLine, 1);
     ASSERT_EQ(token.sourceRange.endColumn, 3);
-    
+
     token = lexer.GetToken();
     ASSERT_EQ(token.type, TOKEN_DIV_ASSIGNMENT);
     ASSERT_EQ(token.sourceRange.startLine, 1);
@@ -431,7 +496,7 @@ TEST_F(LexerTest, ParseAssignmentOperator)
     ASSERT_EQ(token.sourceRange.startColumn, 10);
     ASSERT_EQ(token.sourceRange.endLine, 1);
     ASSERT_EQ(token.sourceRange.endColumn, 11);
-    
+
     token = lexer.GetToken();
     ASSERT_EQ(token.type, TOKEN_SHIFT_LEFT_ASSIGNMENT);
     ASSERT_EQ(token.sourceRange.startLine, 1);

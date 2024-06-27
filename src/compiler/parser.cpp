@@ -90,7 +90,9 @@ export struct Parser {
 
         ParseVariableDeclaration(scope, lexer, std::move(typeIdentifierExpression));
 
+        bool multipleDeclarations {};
         while (lexer.PeekToken().type == ',') {
+            multipleDeclarations = true;
             lexer.GetToken();
 
             if (lexer.PeekToken().type == TOKEN_IDENTIFIER && !scope.QueryTypeInfo(lexer.PeekToken().string())) {
@@ -102,7 +104,11 @@ export struct Parser {
             }
         }
 
-        lexer.GetRequiredToken(';');
+        const auto& endToken = lexer.GetRequiredToken(';');
+        if (!multipleDeclarations) {
+            scope.statements.back()->sourceRange.endLine = endToken.sourceRange.endLine;
+            scope.statements.back()->sourceRange.endColumn = endToken.sourceRange.endColumn;
+        }
     }
 
     // variable_declaration
@@ -120,13 +126,13 @@ export struct Parser {
             throw Exception { typeIdentifierExpression->sourceRange, "Undefined type '{}'", typeIdentifierExpression->fullName };
         }
 
-        ParseVariableDeclarationWithType(scope, lexer, *type);
+        ParseVariableDeclarationWithType(scope, lexer, *type, &typeIdentifierExpression->sourceRange);
     }
 
-    void ParseVariableDeclarationWithType(Scope& scope, Lexer& lexer, TypeInfo& type)
+    void ParseVariableDeclarationWithType(Scope& scope, Lexer& lexer, TypeInfo& type, const SourceRange* typeSourceRange = nullptr)
     {
         auto identifier = lexer.GetRequiredToken(TOKEN_IDENTIFIER);
-        auto sourceRange = identifier.sourceRange;
+        auto sourceRange = typeSourceRange ? *typeSourceRange : identifier.sourceRange;
 
         auto initExpression = std::unique_ptr<Expression> {};
         if (lexer.PeekToken().type == '=') {

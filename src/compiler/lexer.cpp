@@ -229,6 +229,16 @@ private:
     void ReadSingleLineComment()
     {
         assert(PeekChar() == '#' || PeekChar() == '/');
+        if (PeekChar() == '#') {
+            GetChar();
+            // If the next character is not white character or other supported characters, throw error.
+            if (auto ch = PeekChar(); ch != TOKEN_EOF && !std::isspace((unsigned char)ch)) {
+                if (ch != '!') {
+                    throw Exception { m_line, m_column, "'#' comment must be followed by a whitespace character" };
+                }
+            }
+        }
+
         for (auto ch = GetChar(); ch != TOKEN_EOF && ch != '\n'; ch = GetChar())
             ;
     }
