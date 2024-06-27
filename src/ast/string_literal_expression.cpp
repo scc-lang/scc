@@ -9,16 +9,16 @@ import :source_range;
 
 namespace scc::ast {
 
-export struct AstStringLiteralExpression final : AstExpression {
+export struct StringLiteralExpression final : Expression {
     std::string value {};
 
-    AstStringLiteralExpression(SourceRange sourceRanage, std::string value)
-        : AstExpression { std::move(sourceRanage) }
+    StringLiteralExpression(SourceRange sourceRanage, std::string value)
+        : Expression { std::move(sourceRanage) }
         , value { std::move(value) }
     {
     }
 
-    void Visit(AstVisitor& visitor) override
+    void Visit(Visitor& visitor) override
     {
         visitor.VisitAstStringLiteralExpression(*this);
     }

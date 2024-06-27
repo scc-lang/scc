@@ -11,23 +11,23 @@ import :ast_variable_declaration;
 
 namespace scc::ast {
 
-export struct AstScope final {
-    std::vector<std::unique_ptr<AstStatement>> statements {};
-    std::vector<std::unique_ptr<AstVariableDeclaration>> variableDeclarations {};
+export struct Scope final {
+    std::vector<std::unique_ptr<Statement>> statements {};
+    std::vector<std::unique_ptr<VariableDeclaration>> variableDeclarations {};
 
-    AstScope* parentScope {};
+    Scope* parentScope {};
 
-    AstScope(AstScope* parentScope = nullptr)
+    Scope(Scope* parentScope = nullptr)
         : parentScope { parentScope }
     {
         if (!parentScope) {
             // For global scope, add builtin type.
             // TODO
-            m_types.emplace("int", AstTypeInfo { "int" });
+            m_types.emplace("int", TypeInfo { "int" });
         }
     }
 
-    AstTypeInfo* QueryTypeInfo(const std::string& symbol)
+    TypeInfo* QueryTypeInfo(const std::string& symbol)
     {
         auto it = m_types.find(symbol);
         if (it == m_types.end()) {
@@ -38,7 +38,7 @@ export struct AstScope final {
     }
 
 private:
-    std::unordered_map<std::string, AstTypeInfo> m_types {};
+    std::unordered_map<std::string, TypeInfo> m_types {};
 };
 
 }

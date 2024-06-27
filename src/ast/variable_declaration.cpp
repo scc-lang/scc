@@ -10,22 +10,22 @@ import :source_range;
 
 namespace scc::ast {
 
-export struct AstTypeInfo;
+export struct TypeInfo;
 
-export struct AstVariableDeclaration : AstNode {
-    AstTypeInfo& typeInfo;
+export struct VariableDeclaration : Node {
+    TypeInfo& typeInfo;
     std::string name {};
-    std::unique_ptr<AstExpression> initExpression {};
+    std::unique_ptr<Expression> initExpression {};
 
-    AstVariableDeclaration(SourceRange sourceRange, AstTypeInfo& typeinfo, std::string name, std::unique_ptr<AstExpression> initExpression = nullptr)
-        : AstNode { std::move(sourceRange) }
+    VariableDeclaration(SourceRange sourceRange, TypeInfo& typeinfo, std::string name, std::unique_ptr<Expression> initExpression = nullptr)
+        : Node { std::move(sourceRange) }
         , typeInfo { typeinfo }
         , name { std::move(name) }
         , initExpression { std::move(initExpression) }
     {
     }
 
-    void Visit(AstVisitor& visitor) override
+    void Visit(Visitor& visitor) override
     {
         visitor.VisitAstVariableDeclaration(*this);
     }

@@ -15,7 +15,7 @@ protected:
 
     std::string Translate(const std::filesystem::path& path)
     {
-        AstScope scope {};
+        Scope scope {};
         Lexer lexer { std::make_shared<std::istringstream>(ReadFileAsString(path)) };
         Parser {}.ParseCompileUnit(scope, lexer);
 

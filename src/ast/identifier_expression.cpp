@@ -9,16 +9,16 @@ import :source_range;
 
 namespace scc::ast {
 
-export struct AstIdentifierExpression : AstExpression {
+export struct IdentifierExpression : Expression {
     std::string fullName {};
 
-    AstIdentifierExpression(SourceRange sourceRange, std::string fullName)
-        : AstExpression(std::move(sourceRange))
+    IdentifierExpression(SourceRange sourceRange, std::string fullName)
+        : Expression(std::move(sourceRange))
         , fullName { std::move(fullName) }
     {
     }
 
-    void Visit(AstVisitor& visitor) override
+    void Visit(Visitor& visitor) override
     {
         visitor.VisitAstIdentifierExpression(*this);
     }

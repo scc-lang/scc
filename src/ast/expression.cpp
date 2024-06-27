@@ -8,9 +8,9 @@ import :source_range;
 
 namespace scc::ast {
 
-export struct AstExpression : AstNode {
-    AstExpression(SourceRange sourceRange)
-        : AstNode { std::move(sourceRange) }
+export struct Expression : Node {
+    Expression(SourceRange sourceRange)
+        : Node { std::move(sourceRange) }
     {
     }
 };

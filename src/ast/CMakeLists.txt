@@ -1,23 +1,23 @@
 add_library(scc.ast)
 target_sources(scc.ast PUBLIC FILE_SET CXX_MODULES FILES
-    ast_binary_expression.cpp
-    ast_break_statement.cpp
-    ast_conditional_statement.cpp
-    ast_expression_statement.cpp
-    ast_expression.cpp
-    ast_for_loop_statement.cpp
-    ast_function_call_expression.cpp
-    ast_identifier_expression.cpp
-    ast_integer_literal_expression.cpp
-    ast_node.cpp
-    ast_scope.cpp
-    ast_statement.cpp
-    ast_string_literal_expression.cpp
-    ast_type_info.cpp
-    ast_unary_expression.cpp
-    ast_variable_declaration.cpp
-    ast_variable_definition_statement.cpp
-    ast_visitor.cpp
+    binary_expression.cpp
+    break_statement.cpp
+    conditional_statement.cpp
+    expression_statement.cpp
+    expression.cpp
+    for_loop_statement.cpp
+    function_call_expression.cpp
+    identifier_expression.cpp
+    integer_literal_expression.cpp
     module.cpp
+    node.cpp
+    scope.cpp
     source_range.cpp
+    statement.cpp
+    string_literal_expression.cpp
+    type_info.cpp
+    unary_expression.cpp
+    variable_declaration.cpp
+    variable_definition_statement.cpp
+    visitor.cpp
 )

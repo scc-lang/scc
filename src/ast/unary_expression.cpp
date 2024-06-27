@@ -14,19 +14,19 @@ export enum class UnaryOp {
     Bracket,
 };
 
-export struct AstUnaryExpression final : AstExpression {
+export struct UnaryExpression final : Expression {
     UnaryOp op {};
-    std::unique_ptr<AstExpression> oprand {};
+    std::unique_ptr<Expression> oprand {};
 
-    AstUnaryExpression(SourceRange sourceRange, UnaryOp op, std::unique_ptr<AstExpression> oprand)
-        : AstExpression { std::move(sourceRange) }
+    UnaryExpression(SourceRange sourceRange, UnaryOp op, std::unique_ptr<Expression> oprand)
+        : Expression { std::move(sourceRange) }
         , op { op }
         , oprand { std::move(oprand) }
     {
         assert(this->oprand);
     }
 
-    void Visit(AstVisitor& visitor) override
+    void Visit(Visitor& visitor) override
     {
         visitor.VisitAstUnaryExpression(*this);
     }
