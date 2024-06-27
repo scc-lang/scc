@@ -2,12 +2,12 @@ module;
 
 #include <string>
 
-export module scc.compiler:ast_string_literal_expression;
+export module scc.ast:ast_string_literal_expression;
 import :ast_expression;
 import :ast_visitor;
 import :source_range;
 
-namespace scc::compiler {
+namespace scc::ast {
 
 export struct AstStringLiteralExpression final : AstExpression {
     std::string value {};
@@ -18,7 +18,8 @@ export struct AstStringLiteralExpression final : AstExpression {
     {
     }
 
-    void Visit(AstVisitor& visitor) override {
+    void Visit(AstVisitor& visitor) override
+    {
         visitor.VisitAstStringLiteralExpression(*this);
     }
 };

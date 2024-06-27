@@ -1,29 +1,13 @@
 add_library(scc.compiler)
 target_sources(scc.compiler PUBLIC FILE_SET CXX_MODULES FILES
-    ast_binary_expression.cpp
-    ast_break_statement.cpp
-    ast_conditional_statement.cpp
-    ast_expression_statement.cpp
-    ast_expression.cpp
-    ast_for_loop_statement.cpp
-    ast_function_call_expression.cpp
-    ast_identifier_expression.cpp
-    ast_integer_literal_expression.cpp
-    ast_node.cpp
-    ast_scope.cpp
-    ast_statement.cpp
-    ast_string_literal_expression.cpp
-    ast_type_info.cpp
-    ast_unary_expression.cpp
-    ast_variable_declaration.cpp
-    ast_variable_definition_statement.cpp
-    ast_visitor.cpp
     exception.cpp
     lexer.cpp
     module.cpp
     parser.cpp
     printer.cpp
-    source_range.cpp
     token.cpp
     translator.cpp
+)
+target_link_libraries(scc.compiler PUBLIC
+    scc.ast
 )

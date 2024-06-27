@@ -2,9 +2,9 @@ module;
 
 #include <string>
 
-export module scc.compiler:ast_type_info;
+export module scc.ast:ast_type_info;
 
-namespace scc::compiler {
+namespace scc::ast {
 
 export struct AstTypeInfo final {
     std::string fullName {};

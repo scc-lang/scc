@@ -3,12 +3,12 @@ module;
 #include <cassert>
 #include <memory>
 
-export module scc.compiler:ast_unary_expression;
+export module scc.ast:ast_unary_expression;
 import :ast_expression;
 import :ast_visitor;
 import :source_range;
 
-namespace scc::compiler {
+namespace scc::ast {
 
 export enum class UnaryOp {
     Bracket,
@@ -26,7 +26,8 @@ export struct AstUnaryExpression final : AstExpression {
         assert(this->oprand);
     }
 
-    void Visit(AstVisitor& visitor) override {
+    void Visit(AstVisitor& visitor) override
+    {
         visitor.VisitAstUnaryExpression(*this);
     }
 };

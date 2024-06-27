@@ -3,12 +3,12 @@ module;
 #include <cstdint>
 #include <utility>
 
-export module scc.compiler:ast_integer_literal_expression;
+export module scc.ast:ast_integer_literal_expression;
 import :ast_expression;
 import :ast_visitor;
 import :source_range;
 
-namespace scc::compiler {
+namespace scc::ast {
 
 export struct AstIntegerLiteralExpression final : AstExpression {
     uint64_t value {};
@@ -19,7 +19,8 @@ export struct AstIntegerLiteralExpression final : AstExpression {
     {
     }
 
-    void Visit(AstVisitor& visitor) override {
+    void Visit(AstVisitor& visitor) override
+    {
         visitor.VisitAstIntegerLiteralExpression(*this);
     }
 };

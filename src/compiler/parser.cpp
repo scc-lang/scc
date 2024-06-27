@@ -5,28 +5,15 @@ module;
 #include <optional>
 #include <vector>
 
+import scc.ast;
+
 export module scc.compiler:parser;
-import :ast_binary_expression;
-import :ast_break_statement;
-import :ast_conditional_statement;
-import :ast_expression;
-import :ast_expression_statement;
-import :ast_for_loop_statement;
-import :ast_function_call_expression;
-import :ast_identifier_expression;
-import :ast_integer_literal_expression;
-import :ast_string_literal_expression;
-import :ast_scope;
-import :ast_statement;
-import :ast_type_info;
-import :ast_unary_expression;
-import :ast_variable_declaration;
-import :ast_variable_definition_statement;
 import :exception;
 import :lexer;
-import :source_range;
 
 namespace scc::compiler {
+
+using namespace ast;
 
 export struct Parser {
     // compile_unit

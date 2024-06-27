@@ -2,12 +2,12 @@ module;
 
 #include <utility>
 
-export module scc.compiler:ast_variable_definition_statement;
+export module scc.ast:ast_variable_definition_statement;
 import :ast_statement;
 import :ast_visitor;
 import :source_range;
 
-namespace scc::compiler {
+namespace scc::ast {
 
 export struct AstVariableDeclaration;
 
@@ -20,7 +20,8 @@ export struct AstVariableDefinitionStatement final : AstStatement {
     {
     }
 
-    void Visit(AstVisitor& visitor) override {
+    void Visit(AstVisitor& visitor) override
+    {
         visitor.VisitAstVariableDefinitionStatement(*this);
     }
 };
