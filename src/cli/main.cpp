@@ -133,7 +133,7 @@ std::string GetFileLine(const std::string& file, int line)
     std::ifstream in { file };
     std::string str {};
     for (int i = 0; i < line; ++i) {
-        if (std::getline(in, str).eof()) {
+        if (!std::getline(in, str)) {
             return "";
         }
     }
