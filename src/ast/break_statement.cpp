@@ -9,13 +9,13 @@ import :source_range;
 
 namespace scc::ast {
 
-export struct AstBreakStatement : AstStatement {
-    AstBreakStatement(SourceRange sourceRange)
-        : AstStatement { std::move(sourceRange) }
+export struct BreakStatement : Statement {
+    BreakStatement(SourceRange sourceRange)
+        : Statement { std::move(sourceRange) }
     {
     }
 
-    void Visit(AstVisitor& visitor) override
+    void Visit(Visitor& visitor) override
     {
         visitor.VisitAstBreakStatement(*this);
     }

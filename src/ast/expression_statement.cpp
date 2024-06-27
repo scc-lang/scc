@@ -10,16 +10,16 @@ import :source_range;
 
 namespace scc::ast {
 
-export struct AstExpressionStatement final : AstStatement {
-    std::unique_ptr<AstExpression> expression {};
+export struct ExpressionStatement final : Statement {
+    std::unique_ptr<Expression> expression {};
 
-    AstExpressionStatement(SourceRange sourceRange, std::unique_ptr<AstExpression> expression)
-        : AstStatement { std::move(sourceRange) }
+    ExpressionStatement(SourceRange sourceRange, std::unique_ptr<Expression> expression)
+        : Statement { std::move(sourceRange) }
         , expression { std::move(expression) }
     {
     }
 
-    void Visit(AstVisitor& visitor) override
+    void Visit(Visitor& visitor) override
     {
         visitor.VisitAstExpressionStatement(*this);
     }

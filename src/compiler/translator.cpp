@@ -13,13 +13,13 @@ namespace scc::compiler {
 
 using namespace ast;
 
-export struct Translator final : AstVisitor {
+export struct Translator final : Visitor {
     Translator(std::shared_ptr<std::ostream> out)
         : m_printer { std::move(out) }
     {
     }
 
-    void VisitAstBinaryExpression(const AstBinaryExpression& binaryExpression) override
+    void VisitAstBinaryExpression(const BinaryExpression& binaryExpression) override
     {
         binaryExpression.leftOprand->Visit(*this);
         switch (binaryExpression.op) {
@@ -92,11 +92,11 @@ export struct Translator final : AstVisitor {
         binaryExpression.rightOprand->Visit(*this);
     }
 
-    void VisitAstBreakStatement(const AstBreakStatement& breakStatement) override
+    void VisitAstBreakStatement(const BreakStatement& breakStatement) override
     {
     }
 
-    void VisitAstConditionalStatement(const AstConditionalStatement& conditionalStatement) override
+    void VisitAstConditionalStatement(const ConditionalStatement& conditionalStatement) override
     {
         m_printer.Print("if (");
         conditionalStatement.conditionalExpression->Visit(*this);
@@ -106,14 +106,14 @@ export struct Translator final : AstVisitor {
         VisitAstScope(conditionalStatement.falseScope);
     }
 
-    void VisitAstExpressionStatement(const AstExpressionStatement& expressionStatement) override
+    void VisitAstExpressionStatement(const ExpressionStatement& expressionStatement) override
     {
         assert(expressionStatement.expression);
         expressionStatement.expression->Visit(*this);
         m_printer.Println(";");
     }
 
-    void VisitAstFunctionCallExpression(const AstFunctionCallExpression& functionCallExpression) override
+    void VisitAstFunctionCallExpression(const FunctionCallExpression& functionCallExpression) override
     {
         assert(functionCallExpression.funcExpression);
         functionCallExpression.funcExpression->Visit(*this);
@@ -131,7 +131,7 @@ export struct Translator final : AstVisitor {
         m_printer.Print(")");
     }
 
-    void VisitAstIdentifierExpression(const AstIdentifierExpression& identifierExpression) override
+    void VisitAstIdentifierExpression(const IdentifierExpression& identifierExpression) override
     {
         if (identifierExpression.fullName.starts_with("std::")) {
             m_printer.Print("scc::{}", identifierExpression.fullName);
@@ -140,12 +140,12 @@ export struct Translator final : AstVisitor {
         }
     }
 
-    void VisitAstIntegerLiteralExpression(const AstIntegerLiteralExpression& integerLiteralExpression) override
+    void VisitAstIntegerLiteralExpression(const IntegerLiteralExpression& integerLiteralExpression) override
     {
         m_printer.Print("{}", integerLiteralExpression.value);
     }
 
-    void VisitAstForLoopStatement(const AstForLoopStatement& forLoopStatement) override
+    void VisitAstForLoopStatement(const ForLoopStatement& forLoopStatement) override
     {
         m_printer.Println("{{");
         m_printer.PushIndent();
@@ -172,7 +172,7 @@ export struct Translator final : AstVisitor {
         m_printer.Println("}}");
     }
 
-    void VisitAstScope(const AstScope& scope) override
+    void VisitAstScope(const Scope& scope) override
     {
         if (!scope.parentScope) {
             // Output declare for global scope.
@@ -196,7 +196,7 @@ export struct Translator final : AstVisitor {
         m_printer.Println("}}");
     }
 
-    void VisitAstStringLiteralExpression(const AstStringLiteralExpression& stringLiteralExpression) override
+    void VisitAstStringLiteralExpression(const StringLiteralExpression& stringLiteralExpression) override
     {
         m_printer.Print("\"");
         for (const auto ch : stringLiteralExpression.value) {
@@ -209,7 +209,7 @@ export struct Translator final : AstVisitor {
         m_printer.Print("\"");
     }
 
-    void VisitAstUnaryExpression(const AstUnaryExpression& unaryExpression) override
+    void VisitAstUnaryExpression(const UnaryExpression& unaryExpression) override
     {
         m_printer.Print("(");
 
@@ -219,7 +219,7 @@ export struct Translator final : AstVisitor {
         m_printer.Print(")");
     }
 
-    void VisitAstVariableDeclaration(const AstVariableDeclaration& variableDeclaration) override
+    void VisitAstVariableDeclaration(const VariableDeclaration& variableDeclaration) override
     {
         PrintTypeInfo(variableDeclaration.typeInfo);
         m_printer.Print(" ");
@@ -233,14 +233,14 @@ export struct Translator final : AstVisitor {
         m_printer.Print("}}");
     }
 
-    void VisitAstVariableDefinitionStatement(const AstVariableDefinitionStatement& variableDefinitionStatemet) override
+    void VisitAstVariableDefinitionStatement(const VariableDefinitionStatement& variableDefinitionStatemet) override
     {
         VisitAstVariableDeclaration(variableDefinitionStatemet.variableDeclaration);
         m_printer.Println(";");
     }
 
 private:
-    void PrintTypeInfo(const AstTypeInfo& typeInfo)
+    void PrintTypeInfo(const TypeInfo& typeInfo)
     {
         m_printer.Print(typeInfo.fullName);
     }

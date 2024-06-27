@@ -10,16 +10,16 @@ import :source_range;
 
 namespace scc::ast {
 
-export struct AstIntegerLiteralExpression final : AstExpression {
+export struct IntegerLiteralExpression final : Expression {
     uint64_t value {};
 
-    AstIntegerLiteralExpression(SourceRange sourceRanage, uint64_t value)
-        : AstExpression { std::move(sourceRanage) }
+    IntegerLiteralExpression(SourceRange sourceRanage, uint64_t value)
+        : Expression { std::move(sourceRanage) }
         , value { value }
     {
     }
 
-    void Visit(AstVisitor& visitor) override
+    void Visit(Visitor& visitor) override
     {
         visitor.VisitAstIntegerLiteralExpression(*this);
     }

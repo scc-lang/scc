@@ -7,19 +7,19 @@ import :source_range;
 
 namespace scc::ast {
 
-export struct AstVisitor;
+export struct Visitor;
 
-export struct AstNode {
+export struct Node {
     SourceRange sourceRange;
 
-    AstNode(SourceRange sourceRange)
+    Node(SourceRange sourceRange)
         : sourceRange { std::move(sourceRange) }
     {
     }
 
-    virtual ~AstNode() = default;
+    virtual ~Node() = default;
 
-    virtual void Visit(AstVisitor& visitor) = 0;
+    virtual void Visit(Visitor& visitor) = 0;
 };
 
 }

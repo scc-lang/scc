@@ -6,10 +6,10 @@ export module scc.ast:ast_type_info;
 
 namespace scc::ast {
 
-export struct AstTypeInfo final {
+export struct TypeInfo final {
     std::string fullName {};
 
-    explicit AstTypeInfo(std::string fullName)
+    explicit TypeInfo(std::string fullName)
         : fullName { std::move(fullName) }
     {
     }

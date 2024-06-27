@@ -37,13 +37,13 @@ export enum class BinaryOp {
     GreaterEqual,
 };
 
-export struct AstBinaryExpression final : AstExpression {
-    std::unique_ptr<AstExpression> leftOprand {};
+export struct BinaryExpression final : Expression {
+    std::unique_ptr<Expression> leftOprand {};
     BinaryOp op {};
-    std::unique_ptr<AstExpression> rightOprand {};
+    std::unique_ptr<Expression> rightOprand {};
 
-    AstBinaryExpression(SourceRange sourceRange, std::unique_ptr<AstExpression> leftOprand, BinaryOp op, std::unique_ptr<AstExpression> rightOperand)
-        : AstExpression { std::move(sourceRange) }
+    BinaryExpression(SourceRange sourceRange, std::unique_ptr<Expression> leftOprand, BinaryOp op, std::unique_ptr<Expression> rightOperand)
+        : Expression { std::move(sourceRange) }
         , leftOprand { std::move(leftOprand) }
         , op { op }
         , rightOprand { std::move(rightOperand) }
@@ -52,7 +52,7 @@ export struct AstBinaryExpression final : AstExpression {
         assert(this->rightOprand);
     }
 
-    void Visit(AstVisitor& visitor) override
+    void Visit(Visitor& visitor) override
     {
         visitor.VisitAstBinaryExpression(*this);
     }

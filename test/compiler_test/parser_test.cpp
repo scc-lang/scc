@@ -9,45 +9,45 @@ using namespace scc::compiler;
 
 class ParserTest : public testing::Test {
 protected:
-    AstScope Parse(std::string content)
+    Scope Parse(std::string content)
     {
-        AstScope scope {};
+        Scope scope {};
         Lexer lexer { std::make_shared<std::istringstream>(std::move(content)) };
         Parser {}.ParseCompileUnit(scope, lexer);
         return std::move(scope);
     }
 
-    std::unique_ptr<AstFunctionCallExpression> ParseFunctionCallExpression(std::string content)
+    std::unique_ptr<FunctionCallExpression> ParseFunctionCallExpression(std::string content)
     {
-        AstScope scope {};
+        Scope scope {};
         Lexer lexer { std::make_shared<std::istringstream>(std::move(content)) };
-        return std::unique_ptr<AstFunctionCallExpression> { dynamic_cast<AstFunctionCallExpression*>(Parser {}.ParseFunctionCallExpression(scope, lexer).release()) };
+        return std::unique_ptr<FunctionCallExpression> { dynamic_cast<FunctionCallExpression*>(Parser {}.ParseFunctionCallExpression(scope, lexer).release()) };
     }
 
-    std::unique_ptr<AstBinaryExpression> ParseRelationalExpression(std::string content)
+    std::unique_ptr<BinaryExpression> ParseRelationalExpression(std::string content)
     {
-        AstScope scope {};
+        Scope scope {};
         Lexer lexer { std::make_shared<std::istringstream>(std::move(content)) };
-        return std::unique_ptr<AstBinaryExpression> { dynamic_cast<AstBinaryExpression*>(Parser {}.ParseRelationalExpression(scope, lexer).release()) };
+        return std::unique_ptr<BinaryExpression> { dynamic_cast<BinaryExpression*>(Parser {}.ParseRelationalExpression(scope, lexer).release()) };
     }
 
-    std::unique_ptr<AstBinaryExpression> ParseAssignmentExpression(std::string content)
+    std::unique_ptr<BinaryExpression> ParseAssignmentExpression(std::string content)
     {
-        AstScope scope {};
+        Scope scope {};
         Lexer lexer { std::make_shared<std::istringstream>(std::move(content)) };
-        return std::unique_ptr<AstBinaryExpression> { dynamic_cast<AstBinaryExpression*>(Parser {}.ParseAssignmentExpression(scope, lexer).release()) };
+        return std::unique_ptr<BinaryExpression> { dynamic_cast<BinaryExpression*>(Parser {}.ParseAssignmentExpression(scope, lexer).release()) };
     }
 
-    std::unique_ptr<AstExpression> ParseExpression(std::string content)
+    std::unique_ptr<Expression> ParseExpression(std::string content)
     {
-        AstScope scope {};
+        Scope scope {};
         Lexer lexer { std::make_shared<std::istringstream>(std::move(content)) };
         return Parser {}.ParseExpression(scope, lexer);
     }
 
-    AstScope ParseStatement(std::string content)
+    Scope ParseStatement(std::string content)
     {
-        AstScope scope {};
+        Scope scope {};
         Lexer lexer { std::make_shared<std::istringstream>(std::move(content)) };
         Parser {}.ParseStatement(scope, lexer);
         return std::move(scope);
@@ -66,7 +66,7 @@ TEST_F(ParserTest, ParseFunctionCallExpression)
     ASSERT_TRUE(func->funcExpression);
     ASSERT_TRUE(func->argsExpression.empty());
 
-    auto identifier = dynamic_cast<AstIdentifierExpression*>(func->funcExpression.get());
+    auto identifier = dynamic_cast<IdentifierExpression*>(func->funcExpression.get());
     ASSERT_TRUE(identifier);
     ASSERT_EQ(identifier->fullName, "a");
 
@@ -74,21 +74,21 @@ TEST_F(ParserTest, ParseFunctionCallExpression)
     ASSERT_TRUE(func->funcExpression);
     ASSERT_EQ(func->argsExpression.size(), 3);
 
-    identifier = dynamic_cast<AstIdentifierExpression*>(func->funcExpression.get());
+    identifier = dynamic_cast<IdentifierExpression*>(func->funcExpression.get());
     ASSERT_TRUE(identifier);
     ASSERT_EQ(identifier->fullName, "a::b::c");
 
-    auto arg1 = dynamic_cast<AstFunctionCallExpression*>(func->argsExpression[0].get());
+    auto arg1 = dynamic_cast<FunctionCallExpression*>(func->argsExpression[0].get());
     ASSERT_TRUE(arg1->funcExpression);
-    ASSERT_EQ(dynamic_cast<AstIdentifierExpression*>(arg1->funcExpression.get())->fullName, "a");
+    ASSERT_EQ(dynamic_cast<IdentifierExpression*>(arg1->funcExpression.get())->fullName, "a");
     ASSERT_TRUE(arg1->argsExpression.empty());
 
-    auto arg2 = dynamic_cast<AstFunctionCallExpression*>(func->argsExpression[1].get());
+    auto arg2 = dynamic_cast<FunctionCallExpression*>(func->argsExpression[1].get());
     ASSERT_TRUE(arg2->funcExpression);
-    ASSERT_EQ(dynamic_cast<AstIdentifierExpression*>(arg2->funcExpression.get())->fullName, "d");
+    ASSERT_EQ(dynamic_cast<IdentifierExpression*>(arg2->funcExpression.get())->fullName, "d");
     ASSERT_TRUE(arg2->argsExpression.empty());
 
-    auto arg3 = dynamic_cast<AstStringLiteralExpression*>(func->argsExpression[2].get());
+    auto arg3 = dynamic_cast<StringLiteralExpression*>(func->argsExpression[2].get());
     ASSERT_EQ(arg3->value, "123");
 }
 
@@ -110,10 +110,10 @@ TEST_F(ParserTest, ParseVariableDeclarationStatement)
         ASSERT_EQ(variableDeclaration->typeInfo.fullName, "int");
         ASSERT_EQ(variableDeclaration->name, "a");
 
-        const auto* initExpression = dynamic_cast<AstFunctionCallExpression*>(variableDeclaration->initExpression.get());
+        const auto* initExpression = dynamic_cast<FunctionCallExpression*>(variableDeclaration->initExpression.get());
         ASSERT_EQ(initExpression->argsExpression.size(), 0);
 
-        auto identifier = dynamic_cast<AstIdentifierExpression*>(initExpression->funcExpression.get());
+        auto identifier = dynamic_cast<IdentifierExpression*>(initExpression->funcExpression.get());
         ASSERT_EQ(identifier->fullName, "foo");
     }
 
@@ -130,10 +130,10 @@ TEST_F(ParserTest, ParseVariableDeclarationStatement)
         ASSERT_EQ(variableDeclaration->typeInfo.fullName, "int");
         ASSERT_EQ(variableDeclaration->name, "b");
 
-        const auto* initExpression = dynamic_cast<AstFunctionCallExpression*>(variableDeclaration->initExpression.get());
+        const auto* initExpression = dynamic_cast<FunctionCallExpression*>(variableDeclaration->initExpression.get());
         ASSERT_EQ(initExpression->argsExpression.size(), 0);
 
-        auto identifier = dynamic_cast<AstIdentifierExpression*>(initExpression->funcExpression.get());
+        auto identifier = dynamic_cast<IdentifierExpression*>(initExpression->funcExpression.get());
         ASSERT_EQ(identifier->fullName, "foo");
     }
     {
@@ -161,24 +161,24 @@ TEST_F(ParserTest, ParseRelationalExpression)
     binaryExpression = ParseRelationalExpression("a < b(\"abc\") <= c >= d");
     ASSERT_EQ(binaryExpression->op, BinaryOp::GreaterEqual);
 
-    auto rightOprand = dynamic_cast<AstIdentifierExpression*>(binaryExpression->rightOprand.get());
+    auto rightOprand = dynamic_cast<IdentifierExpression*>(binaryExpression->rightOprand.get());
     ASSERT_EQ(rightOprand->fullName, "d");
 
-    auto leftOprand = dynamic_cast<AstBinaryExpression*>(binaryExpression->leftOprand.get());
+    auto leftOprand = dynamic_cast<BinaryExpression*>(binaryExpression->leftOprand.get());
     ASSERT_EQ(leftOprand->op, BinaryOp::LessEqual);
 
-    rightOprand = dynamic_cast<AstIdentifierExpression*>(leftOprand->rightOprand.get());
+    rightOprand = dynamic_cast<IdentifierExpression*>(leftOprand->rightOprand.get());
     ASSERT_EQ(rightOprand->fullName, "c");
 
-    leftOprand = dynamic_cast<AstBinaryExpression*>(leftOprand->leftOprand.get());
+    leftOprand = dynamic_cast<BinaryExpression*>(leftOprand->leftOprand.get());
     ASSERT_EQ(leftOprand->op, BinaryOp::Less);
 
-    auto func = dynamic_cast<AstFunctionCallExpression*>(leftOprand->rightOprand.get());
-    ASSERT_EQ(dynamic_cast<AstIdentifierExpression*>(func->funcExpression.get())->fullName, "b");
+    auto func = dynamic_cast<FunctionCallExpression*>(leftOprand->rightOprand.get());
+    ASSERT_EQ(dynamic_cast<IdentifierExpression*>(func->funcExpression.get())->fullName, "b");
     ASSERT_EQ(func->argsExpression.size(), 1);
-    ASSERT_EQ(dynamic_cast<AstStringLiteralExpression*>(func->argsExpression[0].get())->value, "abc");
+    ASSERT_EQ(dynamic_cast<StringLiteralExpression*>(func->argsExpression[0].get())->value, "abc");
 
-    auto mostLeftOprand = dynamic_cast<AstIdentifierExpression*>(leftOprand->leftOprand.get());
+    auto mostLeftOprand = dynamic_cast<IdentifierExpression*>(leftOprand->leftOprand.get());
     ASSERT_EQ(mostLeftOprand->fullName, "a");
 }
 
@@ -220,77 +220,77 @@ TEST_F(ParserTest, ParseAssignmentExpression)
     binaryExpression = ParseAssignmentExpression("a = b *= c /= d %= e += f -= g <<= h >>= i &= j ^= k |= l");
     ASSERT_EQ(binaryExpression->op, BinaryOp::Assignment);
 
-    auto leftOprand = dynamic_cast<AstIdentifierExpression*>(binaryExpression->leftOprand.get());
+    auto leftOprand = dynamic_cast<IdentifierExpression*>(binaryExpression->leftOprand.get());
     ASSERT_EQ(leftOprand->fullName, "a");
 
-    auto rightOprand = dynamic_cast<AstBinaryExpression*>(binaryExpression->rightOprand.get());
+    auto rightOprand = dynamic_cast<BinaryExpression*>(binaryExpression->rightOprand.get());
     ASSERT_EQ(rightOprand->op, BinaryOp::MulAssignment);
 
-    leftOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->leftOprand.get());
+    leftOprand = dynamic_cast<IdentifierExpression*>(rightOprand->leftOprand.get());
     ASSERT_EQ(leftOprand->fullName, "b");
 
-    rightOprand = dynamic_cast<AstBinaryExpression*>(rightOprand->rightOprand.get());
+    rightOprand = dynamic_cast<BinaryExpression*>(rightOprand->rightOprand.get());
     ASSERT_EQ(rightOprand->op, BinaryOp::DivAssignment);
 
-    leftOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->leftOprand.get());
+    leftOprand = dynamic_cast<IdentifierExpression*>(rightOprand->leftOprand.get());
     ASSERT_EQ(leftOprand->fullName, "c");
 
-    rightOprand = dynamic_cast<AstBinaryExpression*>(rightOprand->rightOprand.get());
+    rightOprand = dynamic_cast<BinaryExpression*>(rightOprand->rightOprand.get());
     ASSERT_EQ(rightOprand->op, BinaryOp::ModAssignment);
 
-    leftOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->leftOprand.get());
+    leftOprand = dynamic_cast<IdentifierExpression*>(rightOprand->leftOprand.get());
     ASSERT_EQ(leftOprand->fullName, "d");
 
-    rightOprand = dynamic_cast<AstBinaryExpression*>(rightOprand->rightOprand.get());
+    rightOprand = dynamic_cast<BinaryExpression*>(rightOprand->rightOprand.get());
     ASSERT_EQ(rightOprand->op, BinaryOp::AddAssignment);
 
-    leftOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->leftOprand.get());
+    leftOprand = dynamic_cast<IdentifierExpression*>(rightOprand->leftOprand.get());
     ASSERT_EQ(leftOprand->fullName, "e");
 
-    rightOprand = dynamic_cast<AstBinaryExpression*>(rightOprand->rightOprand.get());
+    rightOprand = dynamic_cast<BinaryExpression*>(rightOprand->rightOprand.get());
     ASSERT_EQ(rightOprand->op, BinaryOp::SubAssignment);
 
-    leftOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->leftOprand.get());
+    leftOprand = dynamic_cast<IdentifierExpression*>(rightOprand->leftOprand.get());
     ASSERT_EQ(leftOprand->fullName, "f");
 
-    rightOprand = dynamic_cast<AstBinaryExpression*>(rightOprand->rightOprand.get());
+    rightOprand = dynamic_cast<BinaryExpression*>(rightOprand->rightOprand.get());
     ASSERT_EQ(rightOprand->op, BinaryOp::ShiftLeftAssignment);
 
-    leftOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->leftOprand.get());
+    leftOprand = dynamic_cast<IdentifierExpression*>(rightOprand->leftOprand.get());
     ASSERT_EQ(leftOprand->fullName, "g");
 
-    rightOprand = dynamic_cast<AstBinaryExpression*>(rightOprand->rightOprand.get());
+    rightOprand = dynamic_cast<BinaryExpression*>(rightOprand->rightOprand.get());
     ASSERT_EQ(rightOprand->op, BinaryOp::ShiftRightAssignment);
 
-    leftOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->leftOprand.get());
+    leftOprand = dynamic_cast<IdentifierExpression*>(rightOprand->leftOprand.get());
     ASSERT_EQ(leftOprand->fullName, "h");
 
-    rightOprand = dynamic_cast<AstBinaryExpression*>(rightOprand->rightOprand.get());
+    rightOprand = dynamic_cast<BinaryExpression*>(rightOprand->rightOprand.get());
     ASSERT_EQ(rightOprand->op, BinaryOp::BitAndAssignment);
 
-    leftOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->leftOprand.get());
+    leftOprand = dynamic_cast<IdentifierExpression*>(rightOprand->leftOprand.get());
     ASSERT_EQ(leftOprand->fullName, "i");
 
-    rightOprand = dynamic_cast<AstBinaryExpression*>(rightOprand->rightOprand.get());
+    rightOprand = dynamic_cast<BinaryExpression*>(rightOprand->rightOprand.get());
     ASSERT_EQ(rightOprand->op, BinaryOp::BitXorAssignment);
 
-    leftOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->leftOprand.get());
+    leftOprand = dynamic_cast<IdentifierExpression*>(rightOprand->leftOprand.get());
     ASSERT_EQ(leftOprand->fullName, "j");
 
-    rightOprand = dynamic_cast<AstBinaryExpression*>(rightOprand->rightOprand.get());
+    rightOprand = dynamic_cast<BinaryExpression*>(rightOprand->rightOprand.get());
     ASSERT_EQ(rightOprand->op, BinaryOp::BitOrAssignment);
 
-    leftOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->leftOprand.get());
+    leftOprand = dynamic_cast<IdentifierExpression*>(rightOprand->leftOprand.get());
     ASSERT_EQ(leftOprand->fullName, "k");
 
-    auto mostRightOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->rightOprand.get());
+    auto mostRightOprand = dynamic_cast<IdentifierExpression*>(rightOprand->rightOprand.get());
     ASSERT_EQ(mostRightOprand->fullName, "l");
 }
 
 TEST_F(ParserTest, ParseArithmeticExpression1)
 {
     auto parse = [this](std::string content) {
-        return std::unique_ptr<AstBinaryExpression> { dynamic_cast<AstBinaryExpression*>(ParseExpression(std::move(content)).release()) };
+        return std::unique_ptr<BinaryExpression> { dynamic_cast<BinaryExpression*>(ParseExpression(std::move(content)).release()) };
     };
 
     auto binaryExpression = parse("a+b");
@@ -308,127 +308,127 @@ TEST_F(ParserTest, ParseArithmeticExpression1)
     binaryExpression = parse("a+b-c");
     ASSERT_EQ(binaryExpression->op, BinaryOp::Sub);
 
-    auto rightOprand = dynamic_cast<AstIdentifierExpression*>(binaryExpression->rightOprand.get());
+    auto rightOprand = dynamic_cast<IdentifierExpression*>(binaryExpression->rightOprand.get());
     ASSERT_EQ(rightOprand->fullName, "c");
 
-    auto leftOprand = dynamic_cast<AstBinaryExpression*>(binaryExpression->leftOprand.get());
+    auto leftOprand = dynamic_cast<BinaryExpression*>(binaryExpression->leftOprand.get());
     ASSERT_EQ(leftOprand->op, BinaryOp::Add);
 
-    rightOprand = dynamic_cast<AstIdentifierExpression*>(leftOprand->rightOprand.get());
+    rightOprand = dynamic_cast<IdentifierExpression*>(leftOprand->rightOprand.get());
     ASSERT_EQ(rightOprand->fullName, "b");
 
-    auto mostLeftOprand = dynamic_cast<AstIdentifierExpression*>(leftOprand->leftOprand.get());
+    auto mostLeftOprand = dynamic_cast<IdentifierExpression*>(leftOprand->leftOprand.get());
     ASSERT_EQ(mostLeftOprand->fullName, "a");
 }
 
 TEST_F(ParserTest, ParseArithmeticExpression2)
 {
     auto parse = [this](std::string content) {
-        return std::unique_ptr<AstBinaryExpression> { dynamic_cast<AstBinaryExpression*>(ParseExpression(std::move(content)).release()) };
+        return std::unique_ptr<BinaryExpression> { dynamic_cast<BinaryExpression*>(ParseExpression(std::move(content)).release()) };
     };
 
     auto binaryExpression = parse("a+b*c");
     ASSERT_EQ(binaryExpression->op, BinaryOp::Add);
 
-    auto leftOprand = dynamic_cast<AstIdentifierExpression*>(binaryExpression->leftOprand.get());
+    auto leftOprand = dynamic_cast<IdentifierExpression*>(binaryExpression->leftOprand.get());
     ASSERT_EQ(leftOprand->fullName, "a");
 
-    auto rightOprand = dynamic_cast<AstBinaryExpression*>(binaryExpression->rightOprand.get());
+    auto rightOprand = dynamic_cast<BinaryExpression*>(binaryExpression->rightOprand.get());
     ASSERT_EQ(rightOprand->op, BinaryOp::Mul);
 
-    leftOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->leftOprand.get());
+    leftOprand = dynamic_cast<IdentifierExpression*>(rightOprand->leftOprand.get());
     ASSERT_EQ(leftOprand->fullName, "b");
 
-    auto mostRightOprand = dynamic_cast<AstIdentifierExpression*>(rightOprand->rightOprand.get());
+    auto mostRightOprand = dynamic_cast<IdentifierExpression*>(rightOprand->rightOprand.get());
     ASSERT_EQ(mostRightOprand->fullName, "c");
 }
 
 TEST_F(ParserTest, ParseArithmeticExpression3)
 {
     auto parse = [this](std::string content) {
-        return std::unique_ptr<AstBinaryExpression> { dynamic_cast<AstBinaryExpression*>(ParseExpression(std::move(content)).release()) };
+        return std::unique_ptr<BinaryExpression> { dynamic_cast<BinaryExpression*>(ParseExpression(std::move(content)).release()) };
     };
 
     auto binaryExpression = parse("a+b+c*d-e-f/g/h+i-j");
     ASSERT_EQ(binaryExpression->op, BinaryOp::Sub);
 
-    auto rightLeafExpression = std::unique_ptr<AstIdentifierExpression> { dynamic_cast<AstIdentifierExpression*>(binaryExpression->rightOprand.release()) };
+    auto rightLeafExpression = std::unique_ptr<IdentifierExpression> { dynamic_cast<IdentifierExpression*>(binaryExpression->rightOprand.release()) };
     ASSERT_EQ(rightLeafExpression->fullName, "j");
 
-    auto leftBinaryExpression = std::unique_ptr<AstBinaryExpression> { dynamic_cast<AstBinaryExpression*>(binaryExpression->leftOprand.release()) };
+    auto leftBinaryExpression = std::unique_ptr<BinaryExpression> { dynamic_cast<BinaryExpression*>(binaryExpression->leftOprand.release()) };
     ASSERT_EQ(leftBinaryExpression->op, BinaryOp::Add);
 
-    rightLeafExpression.reset(dynamic_cast<AstIdentifierExpression*>(leftBinaryExpression->rightOprand.release()));
+    rightLeafExpression.reset(dynamic_cast<IdentifierExpression*>(leftBinaryExpression->rightOprand.release()));
     ASSERT_EQ(rightLeafExpression->fullName, "i");
 
-    binaryExpression.reset(dynamic_cast<AstBinaryExpression*>(leftBinaryExpression->leftOprand.release()));
+    binaryExpression.reset(dynamic_cast<BinaryExpression*>(leftBinaryExpression->leftOprand.release()));
     ASSERT_EQ(binaryExpression->op, BinaryOp::Sub);
 
-    auto rightBinaryExpression = std::unique_ptr<AstBinaryExpression> { dynamic_cast<AstBinaryExpression*>(binaryExpression->rightOprand.release()) };
+    auto rightBinaryExpression = std::unique_ptr<BinaryExpression> { dynamic_cast<BinaryExpression*>(binaryExpression->rightOprand.release()) };
     ASSERT_EQ(rightBinaryExpression->op, BinaryOp::Div);
 
-    rightLeafExpression.reset(dynamic_cast<AstIdentifierExpression*>(rightBinaryExpression->rightOprand.release()));
+    rightLeafExpression.reset(dynamic_cast<IdentifierExpression*>(rightBinaryExpression->rightOprand.release()));
     ASSERT_EQ(rightLeafExpression->fullName, "h");
 
-    leftBinaryExpression.reset(dynamic_cast<AstBinaryExpression*>(rightBinaryExpression->leftOprand.release()));
+    leftBinaryExpression.reset(dynamic_cast<BinaryExpression*>(rightBinaryExpression->leftOprand.release()));
     ASSERT_EQ(leftBinaryExpression->op, BinaryOp::Div);
 
-    auto leftLeafExpression = std::unique_ptr<AstIdentifierExpression> { dynamic_cast<AstIdentifierExpression*>(leftBinaryExpression->leftOprand.release()) };
+    auto leftLeafExpression = std::unique_ptr<IdentifierExpression> { dynamic_cast<IdentifierExpression*>(leftBinaryExpression->leftOprand.release()) };
     ASSERT_EQ(leftLeafExpression->fullName, "f");
 
-    rightLeafExpression.reset(dynamic_cast<AstIdentifierExpression*>(leftBinaryExpression->rightOprand.release()));
+    rightLeafExpression.reset(dynamic_cast<IdentifierExpression*>(leftBinaryExpression->rightOprand.release()));
     ASSERT_EQ(rightLeafExpression->fullName, "g");
 
-    leftBinaryExpression.reset(dynamic_cast<AstBinaryExpression*>(binaryExpression->leftOprand.release()));
+    leftBinaryExpression.reset(dynamic_cast<BinaryExpression*>(binaryExpression->leftOprand.release()));
     ASSERT_EQ(leftBinaryExpression->op, BinaryOp::Sub);
 
-    rightLeafExpression.reset(dynamic_cast<AstIdentifierExpression*>(leftBinaryExpression->rightOprand.release()));
+    rightLeafExpression.reset(dynamic_cast<IdentifierExpression*>(leftBinaryExpression->rightOprand.release()));
     ASSERT_EQ(rightLeafExpression->fullName, "e");
 
-    leftBinaryExpression.reset(dynamic_cast<AstBinaryExpression*>(leftBinaryExpression->leftOprand.release()));
+    leftBinaryExpression.reset(dynamic_cast<BinaryExpression*>(leftBinaryExpression->leftOprand.release()));
     ASSERT_EQ(leftBinaryExpression->op, BinaryOp::Add);
 
-    rightBinaryExpression.reset(dynamic_cast<AstBinaryExpression*>(leftBinaryExpression->rightOprand.release()));
+    rightBinaryExpression.reset(dynamic_cast<BinaryExpression*>(leftBinaryExpression->rightOprand.release()));
     ASSERT_EQ(rightBinaryExpression->op, BinaryOp::Mul);
 
-    rightLeafExpression.reset(dynamic_cast<AstIdentifierExpression*>(rightBinaryExpression->rightOprand.release()));
+    rightLeafExpression.reset(dynamic_cast<IdentifierExpression*>(rightBinaryExpression->rightOprand.release()));
     ASSERT_EQ(rightLeafExpression->fullName, "d");
 
-    leftLeafExpression.reset(dynamic_cast<AstIdentifierExpression*>(rightBinaryExpression->leftOprand.release()));
+    leftLeafExpression.reset(dynamic_cast<IdentifierExpression*>(rightBinaryExpression->leftOprand.release()));
     ASSERT_EQ(leftLeafExpression->fullName, "c");
 
-    leftBinaryExpression.reset(dynamic_cast<AstBinaryExpression*>(leftBinaryExpression->leftOprand.release()));
+    leftBinaryExpression.reset(dynamic_cast<BinaryExpression*>(leftBinaryExpression->leftOprand.release()));
     ASSERT_EQ(leftBinaryExpression->op, BinaryOp::Add);
 
-    rightLeafExpression.reset(dynamic_cast<AstIdentifierExpression*>(leftBinaryExpression->rightOprand.release()));
+    rightLeafExpression.reset(dynamic_cast<IdentifierExpression*>(leftBinaryExpression->rightOprand.release()));
     ASSERT_EQ(rightLeafExpression->fullName, "b");
 
-    leftLeafExpression.reset(dynamic_cast<AstIdentifierExpression*>(leftBinaryExpression->leftOprand.release()));
+    leftLeafExpression.reset(dynamic_cast<IdentifierExpression*>(leftBinaryExpression->leftOprand.release()));
     ASSERT_EQ(leftLeafExpression->fullName, "a");
 }
 
 TEST_F(ParserTest, ParseArithmeticExpression4)
 {
     auto parse = [this](std::string content) {
-        return std::unique_ptr<AstBinaryExpression> { dynamic_cast<AstBinaryExpression*>(ParseExpression(std::move(content)).release()) };
+        return std::unique_ptr<BinaryExpression> { dynamic_cast<BinaryExpression*>(ParseExpression(std::move(content)).release()) };
     };
 
     auto binaryExpression = parse("(a+b)*c");
     ASSERT_EQ(binaryExpression->op, BinaryOp::Mul);
 
-    auto leftUnaryExpression = dynamic_cast<AstUnaryExpression*>(binaryExpression->leftOprand.get());
+    auto leftUnaryExpression = dynamic_cast<UnaryExpression*>(binaryExpression->leftOprand.get());
     ASSERT_EQ(leftUnaryExpression->op, UnaryOp::Bracket);
 
-    auto leftBinaryExpression = dynamic_cast<AstBinaryExpression*>(leftUnaryExpression->oprand.get());
+    auto leftBinaryExpression = dynamic_cast<BinaryExpression*>(leftUnaryExpression->oprand.get());
     ASSERT_EQ(leftBinaryExpression->op, BinaryOp::Add);
 
-    auto rightLeafExpression = dynamic_cast<AstIdentifierExpression*>(leftBinaryExpression->rightOprand.get());
+    auto rightLeafExpression = dynamic_cast<IdentifierExpression*>(leftBinaryExpression->rightOprand.get());
     ASSERT_EQ(rightLeafExpression->fullName, "b");
 
-    auto leftLeafExpression = dynamic_cast<AstIdentifierExpression*>(leftBinaryExpression->leftOprand.get());
+    auto leftLeafExpression = dynamic_cast<IdentifierExpression*>(leftBinaryExpression->leftOprand.get());
     ASSERT_EQ(leftLeafExpression->fullName, "a");
 
-    rightLeafExpression = dynamic_cast<AstIdentifierExpression*>(binaryExpression->rightOprand.get());
+    rightLeafExpression = dynamic_cast<IdentifierExpression*>(binaryExpression->rightOprand.get());
     ASSERT_EQ(rightLeafExpression->fullName, "c");
 }
 
@@ -437,7 +437,7 @@ TEST_F(ParserTest, ParseForLoopStatement)
     auto scope = ParseStatement("for (;;) {}");
     ASSERT_EQ(scope.statements.size(), 1);
 
-    auto forStatement = dynamic_cast<AstForLoopStatement*>(scope.statements[0].get());
+    auto forStatement = dynamic_cast<ForLoopStatement*>(scope.statements[0].get());
     ASSERT_EQ(forStatement->initScope.statements.size(), 0);
     ASSERT_EQ(forStatement->initScope.variableDeclarations.size(), 0);
     ASSERT_EQ(forStatement->conditionalExpression, nullptr);
@@ -448,7 +448,7 @@ TEST_F(ParserTest, ParseForLoopStatement)
     scope = ParseStatement("for (int a, int b = 10; a < b; a += 2) {}");
     ASSERT_EQ(scope.statements.size(), 1);
 
-    forStatement = dynamic_cast<AstForLoopStatement*>(scope.statements[0].get());
+    forStatement = dynamic_cast<ForLoopStatement*>(scope.statements[0].get());
     ASSERT_EQ(forStatement->initScope.statements.size(), 2);
     ASSERT_EQ(forStatement->initScope.variableDeclarations.size(), 2);
     ASSERT_NE(forStatement->conditionalExpression, nullptr);
@@ -462,7 +462,7 @@ for (int a, int b = 10; a < b; a += 2) {
 })");
     ASSERT_EQ(scope.statements.size(), 1);
 
-    forStatement = dynamic_cast<AstForLoopStatement*>(scope.statements[0].get());
+    forStatement = dynamic_cast<ForLoopStatement*>(scope.statements[0].get());
     ASSERT_EQ(forStatement->initScope.statements.size(), 2);
     ASSERT_EQ(forStatement->initScope.variableDeclarations.size(), 2);
     ASSERT_NE(forStatement->conditionalExpression, nullptr);
@@ -470,12 +470,12 @@ for (int a, int b = 10; a < b; a += 2) {
     ASSERT_EQ(forStatement->bodyScope.statements.size(), 1);
     ASSERT_EQ(forStatement->bodyScope.variableDeclarations.size(), 0);
 
-    auto funcStatement = dynamic_cast<AstExpressionStatement*>(forStatement->bodyScope.statements[0].get());
+    auto funcStatement = dynamic_cast<ExpressionStatement*>(forStatement->bodyScope.statements[0].get());
     ASSERT_NE(funcStatement, nullptr);
 
-    auto functionCallExpression = dynamic_cast<AstFunctionCallExpression*>(funcStatement->expression.get());
+    auto functionCallExpression = dynamic_cast<FunctionCallExpression*>(funcStatement->expression.get());
     ASSERT_NE(functionCallExpression, nullptr);
-    ASSERT_EQ(dynamic_cast<AstIdentifierExpression*>(functionCallExpression->funcExpression.get())->fullName, "foo");
+    ASSERT_EQ(dynamic_cast<IdentifierExpression*>(functionCallExpression->funcExpression.get())->fullName, "foo");
 }
 
 TEST_F(ParserTest, ParseIfStatement)
@@ -483,8 +483,8 @@ TEST_F(ParserTest, ParseIfStatement)
     auto scope = ParseStatement("if (a) {}");
     ASSERT_EQ(scope.statements.size(), 1);
 
-    auto ifStatement = dynamic_cast<AstConditionalStatement*>(scope.statements[0].get());
-    ASSERT_EQ(dynamic_cast<AstIdentifierExpression*>(ifStatement->conditionalExpression.get())->fullName, "a");
+    auto ifStatement = dynamic_cast<ConditionalStatement*>(scope.statements[0].get());
+    ASSERT_EQ(dynamic_cast<IdentifierExpression*>(ifStatement->conditionalExpression.get())->fullName, "a");
     ASSERT_EQ(ifStatement->trueScope.statements.size(), 0);
     ASSERT_EQ(ifStatement->trueScope.variableDeclarations.size(), 0);
     ASSERT_EQ(ifStatement->falseScope.statements.size(), 0);
@@ -493,51 +493,51 @@ TEST_F(ParserTest, ParseIfStatement)
     scope = ParseStatement("if (a) {a + b; a * b;}");
     ASSERT_EQ(scope.statements.size(), 1);
 
-    ifStatement = dynamic_cast<AstConditionalStatement*>(scope.statements[0].get());
+    ifStatement = dynamic_cast<ConditionalStatement*>(scope.statements[0].get());
     ASSERT_EQ(ifStatement->trueScope.statements.size(), 2);
     ASSERT_EQ(ifStatement->trueScope.variableDeclarations.size(), 0);
     ASSERT_EQ(ifStatement->falseScope.statements.size(), 0);
     ASSERT_EQ(ifStatement->falseScope.variableDeclarations.size(), 0);
 
-    auto binaryExpression = dynamic_cast<AstBinaryExpression*>(dynamic_cast<AstExpressionStatement*>(ifStatement->trueScope.statements[0].get())->expression.get());
+    auto binaryExpression = dynamic_cast<BinaryExpression*>(dynamic_cast<ExpressionStatement*>(ifStatement->trueScope.statements[0].get())->expression.get());
     ASSERT_EQ(binaryExpression->op, BinaryOp::Add);
-    binaryExpression = dynamic_cast<AstBinaryExpression*>(dynamic_cast<AstExpressionStatement*>(ifStatement->trueScope.statements[1].get())->expression.get());
+    binaryExpression = dynamic_cast<BinaryExpression*>(dynamic_cast<ExpressionStatement*>(ifStatement->trueScope.statements[1].get())->expression.get());
     ASSERT_EQ(binaryExpression->op, BinaryOp::Mul);
 
     scope = ParseStatement("if (a) {a + b; a * b;} else {c - d; c / d;}");
     ASSERT_EQ(scope.statements.size(), 1);
 
-    ifStatement = dynamic_cast<AstConditionalStatement*>(scope.statements[0].get());
+    ifStatement = dynamic_cast<ConditionalStatement*>(scope.statements[0].get());
     ASSERT_EQ(ifStatement->trueScope.statements.size(), 2);
     ASSERT_EQ(ifStatement->trueScope.variableDeclarations.size(), 0);
     ASSERT_EQ(ifStatement->falseScope.statements.size(), 2);
     ASSERT_EQ(ifStatement->falseScope.variableDeclarations.size(), 0);
 
-    binaryExpression = dynamic_cast<AstBinaryExpression*>(dynamic_cast<AstExpressionStatement*>(ifStatement->trueScope.statements[0].get())->expression.get());
+    binaryExpression = dynamic_cast<BinaryExpression*>(dynamic_cast<ExpressionStatement*>(ifStatement->trueScope.statements[0].get())->expression.get());
     ASSERT_EQ(binaryExpression->op, BinaryOp::Add);
-    binaryExpression = dynamic_cast<AstBinaryExpression*>(dynamic_cast<AstExpressionStatement*>(ifStatement->trueScope.statements[1].get())->expression.get());
+    binaryExpression = dynamic_cast<BinaryExpression*>(dynamic_cast<ExpressionStatement*>(ifStatement->trueScope.statements[1].get())->expression.get());
     ASSERT_EQ(binaryExpression->op, BinaryOp::Mul);
 
-    binaryExpression = dynamic_cast<AstBinaryExpression*>(dynamic_cast<AstExpressionStatement*>(ifStatement->falseScope.statements[0].get())->expression.get());
+    binaryExpression = dynamic_cast<BinaryExpression*>(dynamic_cast<ExpressionStatement*>(ifStatement->falseScope.statements[0].get())->expression.get());
     ASSERT_EQ(binaryExpression->op, BinaryOp::Sub);
-    binaryExpression = dynamic_cast<AstBinaryExpression*>(dynamic_cast<AstExpressionStatement*>(ifStatement->falseScope.statements[1].get())->expression.get());
+    binaryExpression = dynamic_cast<BinaryExpression*>(dynamic_cast<ExpressionStatement*>(ifStatement->falseScope.statements[1].get())->expression.get());
     ASSERT_EQ(binaryExpression->op, BinaryOp::Div);
 
     scope = ParseStatement("if (a) {a + b; a * b;} else if (a) {c - d; c / d;}");
     ASSERT_EQ(scope.statements.size(), 1);
 
-    ifStatement = dynamic_cast<AstConditionalStatement*>(scope.statements[0].get());
+    ifStatement = dynamic_cast<ConditionalStatement*>(scope.statements[0].get());
     ASSERT_EQ(ifStatement->trueScope.statements.size(), 2);
     ASSERT_EQ(ifStatement->trueScope.variableDeclarations.size(), 0);
     ASSERT_EQ(ifStatement->falseScope.statements.size(), 1);
     ASSERT_EQ(ifStatement->falseScope.variableDeclarations.size(), 0);
 
-    binaryExpression = dynamic_cast<AstBinaryExpression*>(dynamic_cast<AstExpressionStatement*>(ifStatement->trueScope.statements[0].get())->expression.get());
+    binaryExpression = dynamic_cast<BinaryExpression*>(dynamic_cast<ExpressionStatement*>(ifStatement->trueScope.statements[0].get())->expression.get());
     ASSERT_EQ(binaryExpression->op, BinaryOp::Add);
-    binaryExpression = dynamic_cast<AstBinaryExpression*>(dynamic_cast<AstExpressionStatement*>(ifStatement->trueScope.statements[1].get())->expression.get());
+    binaryExpression = dynamic_cast<BinaryExpression*>(dynamic_cast<ExpressionStatement*>(ifStatement->trueScope.statements[1].get())->expression.get());
     ASSERT_EQ(binaryExpression->op, BinaryOp::Mul);
 
-    ifStatement = dynamic_cast<AstConditionalStatement*>(ifStatement->falseScope.statements[0].get());
+    ifStatement = dynamic_cast<ConditionalStatement*>(ifStatement->falseScope.statements[0].get());
     ASSERT_EQ(ifStatement->trueScope.statements.size(), 2);
     ASSERT_EQ(ifStatement->trueScope.variableDeclarations.size(), 0);
     ASSERT_EQ(ifStatement->falseScope.statements.size(), 0);
