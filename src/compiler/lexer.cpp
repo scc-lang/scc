@@ -133,6 +133,9 @@ private:
                     } else if (PeekChar() == '/') {
                         ReadSingleLineComment();
                         continue;
+                    } else if (PeekChar() == '*') {
+                        ReadMultipleLinesComment();
+                        continue;
                     } else {
                         return Token { ch, m_line, m_column - 1 };
                     }
@@ -241,6 +244,31 @@ private:
 
         for (auto ch = GetChar(); ch != TOKEN_EOF && ch != '\n'; ch = GetChar())
             ;
+    }
+
+    void ReadMultipleLinesComment()
+    {
+        assert(PeekChar() == '*');
+        GetChar();
+
+        auto startLine = m_line;
+        auto startColumn = m_column - 2;
+        auto flagCount = int { 1 };
+        auto ch = GetChar();
+        for (; ch != TOKEN_EOF; ch = GetChar()) {
+            if (ch == '/' && PeekChar() == '*') {
+                GetChar();
+                ++flagCount;
+            } else if (ch == '*' && PeekChar() == '/') {
+                GetChar();
+                if (!--flagCount) {
+                    break;
+                }
+            }
+        }
+        if (ch == TOKEN_EOF) {
+            throw Exception(startLine, startColumn, m_line, m_column, "unterminated /* comment");
+        }
     }
 
     Token ReadIdentifier()

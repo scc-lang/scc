@@ -21,7 +21,39 @@ int a + b; // this is comment also.
 
 ## C/C++ style multiple lines comment
 
-_TODO_
+SCC also supports C/C++ style multiple lines comment. All contents between `/*` and `*/` will be ignored.
+
+:::caution
+Unlike C/C++, the multiple lines comment in SCC can be nested. For example, the following comment is valid
+in SCC but invalid in C/C++:
+
+```
+/*
+    /*
+    int b = 20;
+    */
+*/
+```
+
+And the following comment is invalid in SCC but valid in C/C++:
+```
+/*
+    /*
+    int b = 20;
+*/
+```
+
+Nested comment will make some things easy to do. For example, you can easily comment out more code in the outer scope.
+
+Another example is that in C/C++, if string contains `*/` will be hard to comment out. For example, the following comment
+is invalid in C/C++:
+```
+/*
+std::string str = "hellow /* scc */ world!";
+*/
+```
+But in SCC, it is valid.
+:::
 
 ## Bash style single line comment
 

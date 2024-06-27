@@ -23,7 +23,7 @@ TEST_F(LexerTest, ParseEmptyContent)
     ASSERT_EQ(token.sourceRange.endColumn, 1);
 }
 
-TEST_F(LexerTest, ParseBashStyleSingleComment)
+TEST_F(LexerTest, ParseBashStyleSingleLineComment)
 {
     auto lexer = CreateLexer("#");
     auto token = lexer.GetToken();
@@ -124,7 +124,7 @@ int b;
     ASSERT_THROW_COMPILER_EXCEPTION(lexer.GetToken(), (Exception { 1, 2, 2, "'#' comment must be followed by a whitespace character" }));
 }
 
-TEST_F(LexerTest, ParseCStyleSingleComment)
+TEST_F(LexerTest, ParseCStyleSingleLineComment)
 {
     auto lexer = CreateLexer("//");
     auto token = lexer.GetToken();
@@ -200,6 +200,84 @@ int b;
     ASSERT_EQ(token.sourceRange.endColumn, 1);
 }
 
+TEST_F(LexerTest, ParseCStyleMultipleLinesComment)
+{
+    auto lexer = CreateLexer("/**/");
+    auto token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_EOF);
+    ASSERT_EQ(token.sourceRange.startLine, 1);
+    ASSERT_EQ(token.sourceRange.startColumn, 5);
+    ASSERT_EQ(token.sourceRange.endLine, 1);
+    ASSERT_EQ(token.sourceRange.endColumn, 5);
+
+    lexer = CreateLexer("/*/**/*/");
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_EOF);
+    ASSERT_EQ(token.sourceRange.startLine, 1);
+    ASSERT_EQ(token.sourceRange.startColumn, 9);
+    ASSERT_EQ(token.sourceRange.endLine, 1);
+    ASSERT_EQ(token.sourceRange.endColumn, 9);
+
+    lexer = CreateLexer(R"(
+/*/*
+    auto c = "abc */";
+*/
+)");
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_EOF);
+    ASSERT_EQ(token.sourceRange.startLine, 5);
+    ASSERT_EQ(token.sourceRange.startColumn, 1);
+    ASSERT_EQ(token.sourceRange.endLine, 5);
+    ASSERT_EQ(token.sourceRange.endColumn, 1);
+
+    lexer = CreateLexer(R"("/* abc */")");
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_STRING);
+    ASSERT_EQ(token.sourceRange.startLine, 1);
+    ASSERT_EQ(token.sourceRange.startColumn, 1);
+    ASSERT_EQ(token.sourceRange.endLine, 1);
+    ASSERT_EQ(token.sourceRange.endColumn, 11);
+
+    lexer = CreateLexer(R"(
+/*
+    auto c = "/* abc */";
+*/
+)");
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_EOF);
+    ASSERT_EQ(token.sourceRange.startLine, 5);
+    ASSERT_EQ(token.sourceRange.startColumn, 1);
+    ASSERT_EQ(token.sourceRange.endLine, 5);
+    ASSERT_EQ(token.sourceRange.endColumn, 1);
+
+    lexer = CreateLexer(R"(
+abc/*
+    auto c = "/* abc */";
+*/d
+)");
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_IDENTIFIER);
+    ASSERT_EQ(token.sourceRange.startLine, 2);
+    ASSERT_EQ(token.sourceRange.startColumn, 1);
+    ASSERT_EQ(token.sourceRange.endLine, 2);
+    ASSERT_EQ(token.sourceRange.endColumn, 3);
+    ASSERT_EQ(token.string(), "abc");
+
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_IDENTIFIER);
+    ASSERT_EQ(token.sourceRange.startLine, 4);
+    ASSERT_EQ(token.sourceRange.startColumn, 3);
+    ASSERT_EQ(token.sourceRange.endLine, 4);
+    ASSERT_EQ(token.sourceRange.endColumn, 3);
+    ASSERT_EQ(token.string(), "d");
+
+    token = lexer.GetToken();
+    ASSERT_EQ(token.type, TOKEN_EOF);
+    ASSERT_EQ(token.sourceRange.startLine, 5);
+    ASSERT_EQ(token.sourceRange.startColumn, 1);
+    ASSERT_EQ(token.sourceRange.endLine, 5);
+    ASSERT_EQ(token.sourceRange.endColumn, 1);
+}
 
 TEST_F(LexerTest, ParseIdentifier)
 {
