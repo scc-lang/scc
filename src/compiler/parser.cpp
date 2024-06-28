@@ -24,6 +24,16 @@ export struct Parser {
         while (lexer.PeekToken().type != TOKEN_EOF) {
             ParseStatement(scope, lexer);
         }
+
+        // Check whether there is main function in the global scope, and there is statements in the global scope.
+        if (!scope.parentScope) {
+            auto mainFunc = scope.QueryFunction("main");
+            if (mainFunc && !scope.statements.empty()) {
+                throw Exception(
+                    scope.statements.front()->sourceRange,
+                    "unexpected global statement when 'main' function is defined ({}:{})", mainFunc->sourceRange.startLine, mainFunc->sourceRange.startColumn);
+            }
+        }
     }
 
     // statement
@@ -31,6 +41,7 @@ export struct Parser {
     //  : declaration_or_expression_statement
     //  | for_loop_statement
     //  | if_statement
+    //  | return_statement
     void ParseStatement(Scope& scope, Lexer& lexer)
     {
         const auto& token = lexer.PeekToken();
@@ -44,10 +55,10 @@ export struct Parser {
         switch (token.type) {
         case TOKEN_IDENTIFIER:
             // For a identifier token, this statement maybe an expression statement or
-            // a variable declaration statement, depends on the value of the identifier.
-            // If the identifier is a type identifier, then it is a variable declaration
-            // statement, otherwise it is an expression statement.
-            ParseVariableDeclarationOrExpressionStatement(scope, lexer);
+            // a variable or function declaration statement, depends on the value of the
+            // identifier. If the identifier is a type identifier, then it is a variable
+            // or function declaration statement, otherwise it is an expression statement.
+            ParseDeclarationOrExpressionStatement(scope, lexer);
             break;
 
         case TOKEN_FOR:
@@ -58,9 +69,48 @@ export struct Parser {
             ParseIfStatement(scope, lexer);
             break;
 
+        case TOKEN_RETURN:
+            ParseReturnStatement(scope, lexer);
+            break;
+
         default:
             ParseExpressionStatement(scope, lexer);
             break;
+        }
+    }
+
+    // declaration_or_expression_statement
+    //  : variable_or_function_declaration_statement
+    //  | expression_statement
+    void ParseDeclarationOrExpressionStatement(Scope& scope, Lexer& lexer)
+    {
+        // Parse the identifier expression.
+        auto identifier = std::unique_ptr<IdentifierExpression>(static_cast<IdentifierExpression*>(ParseIdentifierExpression(scope, lexer).release()));
+        assert(identifier);
+
+        // Query the identifer in the scope.
+        if (auto typeInfo = scope.QueryTypeInfo(identifier->fullName)) {
+            ParseVariableOrFunctionDeclarationStatement(scope, lexer, std::move(identifier));
+        } else {
+            ParseExpressionStatement(scope, lexer, std::move(identifier));
+        }
+    }
+
+    // variable_or_function_declaration_statement
+    //  : variable_declaration_statement
+    //  | function_declaration_statement
+    void ParseVariableOrFunctionDeclarationStatement(Scope& scope, Lexer& lexer, std::unique_ptr<IdentifierExpression> typeIdentifierExpression)
+    {
+        assert(typeIdentifierExpression);
+
+        auto token = lexer.GetRequiredToken(TOKEN_IDENTIFIER);
+
+        if (lexer.PeekToken().type != '(') {
+            lexer.PutbackToken(std::move(token));
+            ParseVariableDeclarationStatement(scope, lexer, std::move(typeIdentifierExpression));
+        } else {
+            lexer.PutbackToken(std::move(token));
+            ParseFunctionDeclarationStatement(scope, lexer, std::move(typeIdentifierExpression));
         }
     }
 
@@ -88,7 +138,7 @@ export struct Parser {
     {
         assert(typeIdentifierExpression);
 
-        ParseVariableDeclaration(scope, lexer, std::move(typeIdentifierExpression));
+        ParseVariableDeclaration(scope, lexer, /*allowInitExpression*/ true, std::move(typeIdentifierExpression));
 
         bool multipleDeclarations {};
         while (lexer.PeekToken().type == ',') {
@@ -97,10 +147,10 @@ export struct Parser {
 
             if (lexer.PeekToken().type == TOKEN_IDENTIFIER && !scope.QueryTypeInfo(lexer.PeekToken().string())) {
                 // The next token is identifier but not a type name, treat it as a variable with the same type.
-                ParseVariableDeclarationWithType(scope, lexer, scope.variableDeclarations.back()->typeInfo);
+                ParseVariableDeclarationWithType(scope, lexer, scope.variableDeclarations.back()->typeInfo, /*allowInitExpression=*/true);
             } else {
                 // For all other cases, treat as a new variable declaration.
-                ParseVariableDeclaration(scope, lexer);
+                ParseVariableDeclaration(scope, lexer, /*allowInitExpression*/ true);
             }
         }
 
@@ -113,7 +163,7 @@ export struct Parser {
 
     // variable_declaration
     //  : type_idenitifer IDENTIFIER ('=' expression)?
-    void ParseVariableDeclaration(Scope& scope, Lexer& lexer, std::unique_ptr<IdentifierExpression> typeIdentifierExpression = nullptr)
+    void ParseVariableDeclaration(Scope& scope, Lexer& lexer, bool allowInitExpression, std::unique_ptr<IdentifierExpression> typeIdentifierExpression = nullptr)
     {
         if (!typeIdentifierExpression) {
             typeIdentifierExpression.reset(static_cast<IdentifierExpression*>(ParseIdentifierExpression(scope, lexer).release()));
@@ -126,16 +176,16 @@ export struct Parser {
             throw Exception { typeIdentifierExpression->sourceRange, "Undefined type '{}'", typeIdentifierExpression->fullName };
         }
 
-        ParseVariableDeclarationWithType(scope, lexer, *type, &typeIdentifierExpression->sourceRange);
+        ParseVariableDeclarationWithType(scope, lexer, *type, allowInitExpression, &typeIdentifierExpression->sourceRange);
     }
 
-    void ParseVariableDeclarationWithType(Scope& scope, Lexer& lexer, TypeInfo& type, const SourceRange* typeSourceRange = nullptr)
+    void ParseVariableDeclarationWithType(Scope& scope, Lexer& lexer, TypeInfo& type, bool allowInitExpression, const SourceRange* typeSourceRange = nullptr)
     {
         auto identifier = lexer.GetRequiredToken(TOKEN_IDENTIFIER);
         auto sourceRange = typeSourceRange ? *typeSourceRange : identifier.sourceRange;
 
         auto initExpression = std::unique_ptr<Expression> {};
-        if (lexer.PeekToken().type == '=') {
+        if (allowInitExpression && lexer.PeekToken().type == '=') {
             lexer.GetToken();
             initExpression = ParseExpression(scope, lexer);
             sourceRange.endLine = initExpression->sourceRange.endLine;
@@ -147,6 +197,43 @@ export struct Parser {
 
         scope.variableDeclarations.push_back(std::make_unique<VariableDeclaration>(sourceRange, type, std::move(identifier.string()), std::move(initExpression)));
         scope.statements.push_back(std::make_unique<VariableDefinitionStatement>(std::move(sourceRange), *scope.variableDeclarations.back()));
+    }
+
+    // function_declaration_statement
+    //  type_identifier IDENTIFIER '(' (variable_declaration ',')* ')' '{' statement* '}'
+    void ParseFunctionDeclarationStatement(Scope& scope, Lexer& lexer, std::unique_ptr<IdentifierExpression> typeIdentifierExpression)
+    {
+        assert(typeIdentifierExpression);
+
+        auto type = scope.QueryTypeInfo(typeIdentifierExpression->fullName);
+        if (!type) {
+            throw Exception { typeIdentifierExpression->sourceRange, "Undefined type '{}'", typeIdentifierExpression->fullName };
+        }
+
+        auto funcName = lexer.GetRequiredToken(TOKEN_IDENTIFIER).string();
+
+        auto funcHeaderScope = Scope { &scope };
+        lexer.GetRequiredToken('(');
+        if (lexer.PeekToken().type != ')') {
+            ParseVariableDeclaration(funcHeaderScope, lexer, /*allowInitExpression=*/false);
+            while (lexer.PeekToken().type == ',') {
+                lexer.GetToken();
+                ParseVariableDeclaration(funcHeaderScope, lexer, /*allowInitExpression=*/false);
+            }
+        }
+        lexer.GetRequiredToken(')');
+
+        auto funcBodyScope = Scope { &scope };
+        lexer.GetRequiredToken('{');
+        while (lexer.PeekToken().type != '}') {
+            ParseStatement(funcBodyScope, lexer);
+        }
+        const auto& lastToken = lexer.GetRequiredToken('}');
+
+        auto func = std::make_unique<FunctionDefinitionStatement>(
+            SourceRange { typeIdentifierExpression->sourceRange, lastToken.sourceRange },
+            *type, funcName, std::move(funcHeaderScope), std::move(funcBodyScope));
+        scope.AddFunction(std::move(funcName), std::move(func));
     }
 
     // expression_statement
@@ -439,7 +526,7 @@ export struct Parser {
     }
 
     // for_statement
-    //  : FOR '(' declaration_or_expression_statement expression? ';' expression ')' '{' statements* '}'
+    //  : FOR '(' variable_declaration_or_expression_statement expression? ';' expression ')' '{' statements* '}'
     //  : FOR '(' expression? ';' expression? ';' expression ')' '{' statements* '}'
     void ParseForStatement(Scope& scope, Lexer& lexer)
     {
@@ -515,6 +602,18 @@ export struct Parser {
         }
 
         scope.statements.push_back(std::make_unique<ConditionalStatement>(SourceRange { startSourceRange, lastSourceRange }, std::move(conditionalExpression), std::move(trueScope), std::move(falseScope)));
+    }
+
+    // return_statement
+    //  : TOKEN_RETURN expression ';'
+    void ParseReturnStatement(Scope& scope, Lexer& lexer)
+    {
+        const auto& startToken = lexer.GetRequiredToken(TOKEN_RETURN);
+
+        auto expression = ParseExpression(scope, lexer);
+        assert(expression);
+
+        scope.statements.push_back(std::make_unique<ReturnStatement>(SourceRange { startToken.sourceRange, expression->sourceRange }, std::move(expression)));
     }
 
     // integer_literal_expression

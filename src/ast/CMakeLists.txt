@@ -7,10 +7,12 @@ target_sources(scc.ast PUBLIC FILE_SET CXX_MODULES FILES
     expression.cpp
     for_loop_statement.cpp
     function_call_expression.cpp
+    function_definition_statement.cpp
     identifier_expression.cpp
     integer_literal_expression.cpp
     module.cpp
     node.cpp
+    return_statement.cpp
     scope.cpp
     source_range.cpp
     statement.cpp

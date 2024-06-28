@@ -1,9 +1,9 @@
 module;
 
 #include <cassert>
+#include <deque>
 #include <istream>
 #include <memory>
-#include <queue>
 
 import scc.ast;
 
@@ -26,7 +26,7 @@ export struct Lexer final {
             return ReadTokenFromInput();
         } else {
             auto token = std::move(m_tokens.front());
-            m_tokens.pop();
+            m_tokens.pop_front();
             return std::move(token);
         }
     }
@@ -47,9 +47,14 @@ export struct Lexer final {
     const Token& PeekToken()
     {
         if (m_tokens.empty()) {
-            m_tokens.emplace(ReadTokenFromInput());
+            m_tokens.push_back(ReadTokenFromInput());
         }
         return m_tokens.front();
+    }
+
+    void PutbackToken(Token token)
+    {
+        m_tokens.push_front(std::move(token));
     }
 
 private:
@@ -288,6 +293,8 @@ private:
             return Token { TOKEN_IF, startLine, startColumn, m_column - 1 };
         } else if (str == "else") {
             return Token { TOKEN_ELSE, startLine, startColumn, m_column - 1 };
+        } else if (str == "return") {
+            return Token { TOKEN_RETURN, startLine, startColumn, m_column - 1 };
         } else {
             return Token { TOKEN_IDENTIFIER, startLine, startColumn, m_line, m_column - 1, std::move(str) };
         }
@@ -447,7 +454,7 @@ private:
     std::shared_ptr<std::istream> m_in {};
     int m_line { 1 };
     int m_column { 1 };
-    std::queue<Token> m_tokens {};
+    std::deque<Token> m_tokens {};
 };
 
 }

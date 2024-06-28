@@ -24,6 +24,7 @@ export struct Scope final {
             // For global scope, add builtin type.
             // TODO
             m_types.emplace("int", TypeInfo { "int" });
+            m_types.emplace("void", TypeInfo { "void" });
         }
     }
 
@@ -37,8 +38,24 @@ export struct Scope final {
         }
     }
 
+    void AddFunction(std::string name, std::unique_ptr<Statement> func)
+    {
+        m_functions.emplace(std::move(name), std::move(func));
+    }
+
+    Statement* QueryFunction(const std::string& funcName) const
+    {
+        auto it = m_functions.find(funcName);
+        if (it == m_functions.end()) {
+            return parentScope ? parentScope->QueryFunction(funcName) : nullptr;
+        } else {
+            return it->second.get();
+        }
+    }
+
 private:
     std::unordered_map<std::string, TypeInfo> m_types {};
+    std::unordered_map<std::string, std::unique_ptr<Statement>> m_functions {};
 };
 
 }

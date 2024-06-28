@@ -92,6 +92,41 @@ TEST_F(ParserTest, ParseFunctionCallExpression)
     ASSERT_EQ(arg3->value, "123");
 }
 
+TEST_F(ParserTest, ParseFunctionDefinitionStatement)
+{
+    auto scope = ParseStatement("int foo() {}");
+    auto func = dynamic_cast<FunctionDefinitionStatement*>(scope.QueryFunction("foo"));
+    ASSERT_NE(func, nullptr);
+    ASSERT_EQ(func->typeInfo.fullName, "int");
+    ASSERT_EQ(func->name, "foo");
+    ASSERT_EQ(func->headerScope.statements.size(), 0);
+    ASSERT_EQ(func->headerScope.variableDeclarations.size(), 0);
+    ASSERT_EQ(func->bodyScope.statements.size(), 0);
+    ASSERT_EQ(func->bodyScope.variableDeclarations.size(), 0);
+
+    scope = ParseStatement(R"(int foo(int a, int b) {
+    int c = a * b;
+    return a + c;
+})");
+    func = dynamic_cast<FunctionDefinitionStatement*>(scope.QueryFunction("foo"));
+    ASSERT_NE(func, nullptr);
+    ASSERT_EQ(func->typeInfo.fullName, "int");
+    ASSERT_EQ(func->name, "foo");
+    ASSERT_EQ(func->headerScope.statements.size(), 2);
+    ASSERT_EQ(func->headerScope.variableDeclarations.size(), 2);
+    ASSERT_EQ(func->headerScope.variableDeclarations[0]->typeInfo.fullName, "int");
+    ASSERT_EQ(func->headerScope.variableDeclarations[0]->name, "a");
+    ASSERT_EQ(func->headerScope.variableDeclarations[0]->initExpression, nullptr);
+    ASSERT_EQ(func->headerScope.variableDeclarations[1]->typeInfo.fullName, "int");
+    ASSERT_EQ(func->headerScope.variableDeclarations[1]->name, "b");
+    ASSERT_EQ(func->headerScope.variableDeclarations[1]->initExpression, nullptr);
+
+    ASSERT_EQ(func->bodyScope.statements.size(), 2);
+    ASSERT_NE(dynamic_cast<VariableDefinitionStatement*>(func->bodyScope.statements[0].get()), nullptr);
+    ASSERT_EQ(dynamic_cast<BinaryExpression*>(dynamic_cast<ReturnStatement*>(func->bodyScope.statements[1].get())->expression.get())->op, BinaryOp::Add);
+    ASSERT_EQ(func->bodyScope.variableDeclarations.size(), 1);
+}
+
 TEST_F(ParserTest, ParseVariableDeclarationStatement)
 {
     auto scope = ParseStatement("int a;");
@@ -542,4 +577,18 @@ TEST_F(ParserTest, ParseIfStatement)
     ASSERT_EQ(ifStatement->trueScope.variableDeclarations.size(), 0);
     ASSERT_EQ(ifStatement->falseScope.statements.size(), 0);
     ASSERT_EQ(ifStatement->falseScope.variableDeclarations.size(), 0);
+}
+
+TEST_F(ParserTest, CannotHaveOtherGlobalStatementsIfMainFunctionIsDefined)
+{
+    auto content = R"(int a = 10;
+int b = 10;
+
+void main() {
+    std::println("a + b = {}", a + b);
+})";
+
+    Scope scope {};
+    Lexer lexer { std::make_shared<std::istringstream>(std::move(content)) };
+    ASSERT_THROW_COMPILER_EXCEPTION(Parser {}.ParseCompileUnit(scope, lexer), (Exception { 1, 1, 11, "unexpected global statement when 'main' function is defined (4:1)" }));
 }

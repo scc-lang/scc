@@ -1,0 +1,22 @@
+int N = 20;
+
+std::print("The first {} fibonacci sequence: ", N);
+
+for (int i = 0; i < N; i += 1) {
+    if (i != 0) {
+        std::print(", ");
+    }
+    std::print(fib(i));
+}
+
+std::println();
+
+int fib(int n) {
+    if (n == 0) {
+        return 0;
+    } else if (n == 1) {
+        return 1;
+    } else {
+        return fib(n - 1) + fib(n - 2);
+    }
+}
