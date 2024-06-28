@@ -73,6 +73,12 @@ export struct Translator final : Visitor {
             m_printer.Print(" - ");
             break;
 
+        case BinaryOp::Equal:
+            m_printer.Print(" == ");
+            break;
+        case BinaryOp::NotEqual:
+            m_printer.Print(" != ");
+            break;
         case BinaryOp::Less:
             m_printer.Print(" < ");
             break;
@@ -131,6 +137,10 @@ export struct Translator final : Visitor {
         m_printer.Print(")");
     }
 
+    void VisitFunctionDefinitionStatement(const FunctionDefinitionStatement& functionDefinitionStatement) override
+    {
+    }
+
     void VisitAstIdentifierExpression(const IdentifierExpression& identifierExpression) override
     {
         if (identifierExpression.fullName.starts_with("std::")) {
@@ -170,6 +180,10 @@ export struct Translator final : Visitor {
 
         m_printer.PopIndent();
         m_printer.Println("}}");
+    }
+
+    void VisitReturnStatement(const ReturnStatement& returnStatement) override
+    {
     }
 
     void VisitAstScope(const Scope& scope) override
