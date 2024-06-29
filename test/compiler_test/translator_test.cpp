@@ -58,3 +58,8 @@ TEST_F(TranslatorTest, ForStatement)
 {
     RunTest("for_statement");
 }
+
+TEST_F(TranslatorTest, FunctionDefinition)
+{
+    RunTest("function_definition");
+}

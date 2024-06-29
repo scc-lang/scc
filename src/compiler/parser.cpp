@@ -223,7 +223,7 @@ export struct Parser {
         }
         lexer.GetRequiredToken(')');
 
-        auto funcBodyScope = Scope { &scope };
+        auto funcBodyScope = Scope { &funcHeaderScope };
         lexer.GetRequiredToken('{');
         while (lexer.PeekToken().type != '}') {
             ParseStatement(funcBodyScope, lexer);
