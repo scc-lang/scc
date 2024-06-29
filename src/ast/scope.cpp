@@ -53,6 +53,15 @@ export struct Scope final {
         }
     }
 
+    std::vector<Statement*> GetFunctions() const
+    {
+        std::vector<Statement*> functions {};
+        for (auto it = m_functions.begin(); it != m_functions.end(); ++it) {
+            functions.push_back(it->second.get());
+        }
+        return std::move(functions);
+    }
+
 private:
     std::unordered_map<std::string, TypeInfo> m_types {};
     std::unordered_map<std::string, std::unique_ptr<Statement>> m_functions {};

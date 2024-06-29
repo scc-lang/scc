@@ -139,6 +139,9 @@ export struct Translator final : Visitor {
 
     void VisitFunctionDefinitionStatement(const FunctionDefinitionStatement& functionDefinitionStatement) override
     {
+        PrintFunctionHeader(functionDefinitionStatement);
+        m_printer.Println();
+        VisitAstScope(functionDefinitionStatement.bodyScope);
     }
 
     void VisitAstIdentifierExpression(const IdentifierExpression& identifierExpression) override
@@ -184,6 +187,13 @@ export struct Translator final : Visitor {
 
     void VisitReturnStatement(const ReturnStatement& returnStatement) override
     {
+        if (returnStatement.expression) {
+            m_printer.Print("return ");
+            returnStatement.expression->Visit(*this);
+        } else {
+            m_printer.Print("return");
+        }
+        m_printer.Println(";");
     }
 
     void VisitAstScope(const Scope& scope) override
@@ -194,6 +204,27 @@ export struct Translator final : Visitor {
             m_printer.Println();
             m_printer.Println("import scc.std;");
             m_printer.Println();
+
+            // Output function forward declaration.
+            auto functions = scope.GetFunctions();
+            if (!functions.empty()) {
+                m_printer.Println("// function declarations");
+                for (const auto& func : functions) {
+                    PrintFunctionHeader(*static_cast<FunctionDefinitionStatement*>(func));
+                    m_printer.Println(";");
+                }
+                m_printer.Println("int main();");
+                m_printer.Println();
+
+                // Output function.
+                m_printer.Println("// function definitions");
+                for (const auto& func : functions) {
+                    VisitFunctionDefinitionStatement(*static_cast<FunctionDefinitionStatement*>(func));
+                    m_printer.Println();
+                }
+            }
+
+            // Output main.
             m_printer.Println("int main()");
         }
 
@@ -238,25 +269,44 @@ export struct Translator final : Visitor {
         PrintTypeInfo(variableDeclaration.typeInfo);
         m_printer.Print(" ");
         m_printer.Print(variableDeclaration.name);
+    }
+
+    void VisitAstVariableDefinitionStatement(const VariableDefinitionStatement& variableDefinitionStatemet) override
+    {
+        const auto& variableDeclaration = variableDefinitionStatemet.variableDeclaration;
+        VisitAstVariableDeclaration(variableDeclaration);
         m_printer.Print(" {{");
         if (variableDeclaration.initExpression) {
             m_printer.Print(" ");
             variableDeclaration.initExpression->Visit(*this);
             m_printer.Print(" ");
         }
-        m_printer.Print("}}");
-    }
-
-    void VisitAstVariableDefinitionStatement(const VariableDefinitionStatement& variableDefinitionStatemet) override
-    {
-        VisitAstVariableDeclaration(variableDefinitionStatemet.variableDeclaration);
-        m_printer.Println(";");
+        m_printer.Println("}};");
     }
 
 private:
     void PrintTypeInfo(const TypeInfo& typeInfo)
     {
         m_printer.Print(typeInfo.fullName);
+    }
+
+    void PrintFunctionHeader(const FunctionDefinitionStatement& functionDefinitionStatement)
+    {
+        PrintTypeInfo(functionDefinitionStatement.typeInfo);
+
+        m_printer.Print(" ");
+
+        m_printer.Print(functionDefinitionStatement.name);
+
+        m_printer.Print("(");
+        if (auto it = functionDefinitionStatement.headerScope.variableDeclarations.begin(); it != functionDefinitionStatement.headerScope.variableDeclarations.end()) {
+            VisitAstVariableDeclaration(**it++);
+            while (it != functionDefinitionStatement.headerScope.variableDeclarations.end()) {
+                m_printer.Print(", ");
+                VisitAstVariableDeclaration(**it++);
+            }
+        }
+        m_printer.Print(")");
     }
 
     Printer m_printer;
