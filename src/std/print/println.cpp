@@ -17,4 +17,10 @@ export void println()
     printf("\n");
 }
 
+export template <class... Args>
+void print(const ::std::string_view& fmt, Args&&... args)
+{
+    printf("%s", ::std::vformat(fmt, ::std::make_format_args(args...)).c_str());
+}
+
 }

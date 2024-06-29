@@ -62,3 +62,8 @@ TEST_F(MainTest, FahrenheitCelsiusTable)
 {
     RunTest("fahrenheit_celsius_table");
 }
+
+TEST_F(MainTest, FibonacciSequence)
+{
+    RunTest("fibonacci_sequence");
+}
